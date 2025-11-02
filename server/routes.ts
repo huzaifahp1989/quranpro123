@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import axios from "axios";
+import { storage } from "./storage";
+import { insertBookmarkSchema } from "@shared/schema";
+import { randomUUID } from "crypto";
 
 const ALQURAN_CLOUD_API = "http://api.alquran.cloud/v1";
 const QURAN_TAFSEER_API = "http://api.quran-tafseer.com";
@@ -263,35 +266,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Alternative: Use random hadith API for variety
-  app.get("/api/hadiths/:collection/random", async (req, res) => {
+  // ============================================================================
+  // User Session & Bookmarks API
+  // ============================================================================
+
+  // Get or create user by session ID
+  app.post("/api/user/session", async (req, res) => {
     try {
-      const { collection } = req.params;
-      
-      const validCollections = ['bukhari', 'muslim', 'abudawud', 'tirmidhi', 'ibnmajah'];
-      if (!validCollections.includes(collection)) {
-        return res.status(400).json({ error: "Invalid collection" });
+      const { sessionId } = req.body;
+
+      if (!sessionId || typeof sessionId !== 'string' || sessionId.length === 0) {
+        return res.status(400).json({ error: "Session ID is required" });
       }
 
-      const RANDOM_HADITH_API = 'https://random-hadith-generator.vercel.app';
-      const response = await axios.get(`${RANDOM_HADITH_API}/${collection}/`, { timeout: 10000 });
+      // Try to find existing user
+      let user = await storage.getUserBySessionId(sessionId);
 
-      if (response.data?.data) {
-        const hadith = response.data.data;
-        res.json({
-          hadithNumber: '1',
-          arabicText: '',
-          englishText: hadith.hadith_english || '',
-          narrator: hadith.narrator || '',
-          book: collection,
-          urduText: ''
-        });
-      } else {
-        res.status(500).json({ error: "Failed to fetch random hadith" });
+      // Create new user if doesn't exist
+      if (!user) {
+        user = await storage.createUser({ sessionId });
       }
+
+      res.json(user);
     } catch (error: any) {
-      console.error("Error fetching random hadith:", error.message);
-      res.status(500).json({ error: "Failed to load hadith" });
+      console.error("Error managing user session:", error.message);
+      res.status(500).json({ error: "Failed to manage user session" });
+    }
+  });
+
+  // Get all bookmarks for a user
+  app.get("/api/bookmarks/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user ID" });
+      }
+
+      const bookmarks = await storage.getBookmarks(userId);
+      res.json(bookmarks);
+    } catch (error: any) {
+      console.error("Error fetching bookmarks:", error.message);
+      res.status(500).json({ error: "Failed to fetch bookmarks" });
+    }
+  });
+
+  // Create a new bookmark
+  app.post("/api/bookmarks", async (req, res) => {
+    try {
+      const parsed = insertBookmarkSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid bookmark data", details: parsed.error.errors });
+      }
+
+      const { userId, surahNumber, ayahNumber } = parsed.data;
+
+      // Check if bookmark already exists
+      const exists = await storage.checkBookmarkExists(userId, surahNumber, ayahNumber);
+      if (exists) {
+        return res.status(409).json({ error: "Bookmark already exists" });
+      }
+
+      const bookmark = await storage.createBookmark(parsed.data);
+      res.status(201).json(bookmark);
+    } catch (error: any) {
+      console.error("Error creating bookmark:", error.message);
+      res.status(500).json({ error: "Failed to create bookmark" });
+    }
+  });
+
+  // Delete a bookmark
+  app.delete("/api/bookmarks/:bookmarkId/:userId", async (req, res) => {
+    try {
+      const bookmarkId = parseInt(req.params.bookmarkId);
+      const userId = parseInt(req.params.userId);
+
+      if (isNaN(bookmarkId) || isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid bookmark ID or user ID" });
+      }
+
+      await storage.deleteBookmark(bookmarkId, userId);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting bookmark:", error.message);
+      res.status(500).json({ error: "Failed to delete bookmark" });
     }
   });
 

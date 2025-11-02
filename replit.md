@@ -15,19 +15,30 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 ## Tech Stack
 - **Frontend**: React 18, TypeScript, Tailwind CSS, Shadcn UI
 - **Backend**: Express.js, Node.js
+- **Database**: PostgreSQL (Neon), Drizzle ORM
 - **State Management**: TanStack Query (React Query)
 - **Routing**: Wouter
-- **APIs**: AlQuran Cloud API, Quran Tafseer API, Hadith APIs
+- **APIs**: AlQuran Cloud API, Quran Tafseer API, fawazahmed0 Hadith API
 
 ## Architecture
 
 ### Data Models (shared/schema.ts)
+
+#### API Response Types (Zod)
 - **Surah**: Chapter information with name, number, revelation type
 - **Ayah**: Individual verses with Arabic text and audio URLs
 - **Translation**: Urdu and English translations
 - **Tafseer**: Verse commentary and explanation
-- **Hadith**: Authentic narrations with Arabic, English, and Urdu text
+- **Hadith**: Authentic narrations with English text and reference
 - **Reciter**: Audio reciter information
+
+#### Database Tables (Drizzle ORM)
+- **users**: Anonymous user tracking via sessionId
+- **bookmarks**: Saved verses (userId, surahNumber, ayahNumber, createdAt)
+  - Unique constraint on (userId, surahNumber, ayahNumber)
+  - Indexes for efficient queries
+- **reading_position**: Current reading position per user (surahNumber, ayahNumber)
+- **user_preferences**: Reciter and theme preferences per user
 
 ### Frontend Components
 1. **SurahSelector**: Dropdown with search for selecting Quran chapters
@@ -111,7 +122,12 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 - Consistent gap between elements (gap-3, gap-4)
 
 ## Recent Changes (November 2025)
-- ✅ **Real Hadith API Integration Complete** - Integrated fawazahmed0 CDN API with 7 authentic Hadith collections
+- ✅ **Database Setup Complete** - PostgreSQL with Drizzle ORM (Task 2)
+  - Created users, bookmarks, reading_position, user_preferences tables
+  - Implemented DatabaseStorage with full CRUD operations
+  - Added unique constraints and indexes for data integrity
+  - Session-based anonymous user tracking (future auth-ready)
+- ✅ **Real Hadith API Integration Complete** - Integrated fawazahmed0 CDN API with 7 authentic Hadith collections (Task 1)
   - Replaced hardcoded data with real API integration
   - Implemented pagination with accumulation (20 hadiths per page, Load More button)
   - Added search functionality with proper state management
