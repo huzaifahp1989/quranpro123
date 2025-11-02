@@ -228,37 +228,69 @@ export function QaidahSection() {
   }, []);
 
   const speak = (text: string, lang: string = 'ar-SA') => {
-    if ('speechSynthesis' in window) {
+    if (!('speechSynthesis' in window)) {
+      alert('Audio pronunciation is not supported in this browser. Please try opening in Chrome, Edge, or Safari.');
+      return;
+    }
+
+    try {
+      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
       
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang;
-      utterance.rate = 0.7;
-      utterance.pitch = 0.9; // Slightly lower pitch for male voice
+      // Small delay to ensure cancellation completes
+      setTimeout(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 0.7;
+        utterance.pitch = 0.9; // Slightly lower pitch for male voice
+        utterance.volume = 1.0;
 
-      // Try to find a male Arabic voice
-      const arabicVoices = voices.filter(voice => 
-        voice.lang.startsWith('ar') || voice.lang === 'ar-SA'
-      );
-      
-      // Prefer male voices (names often contain "Male" or specific male voice names)
-      const maleVoice = arabicVoices.find(voice => 
-        voice.name.toLowerCase().includes('male') ||
-        voice.name.toLowerCase().includes('majed') ||
-        voice.name.toLowerCase().includes('maged') ||
-        !voice.name.toLowerCase().includes('female')
-      );
+        // Get fresh voices list
+        const availableVoices = window.speechSynthesis.getVoices();
+        
+        // Try to find a male Arabic voice
+        const arabicVoices = availableVoices.filter(voice => 
+          voice.lang.startsWith('ar') || voice.lang.includes('ar')
+        );
+        
+        console.log('Available voices:', availableVoices.length);
+        console.log('Arabic voices:', arabicVoices.length);
+        
+        if (arabicVoices.length > 0) {
+          // Prefer male voices
+          const maleVoice = arabicVoices.find(voice => 
+            voice.name.toLowerCase().includes('male') ||
+            voice.name.toLowerCase().includes('majed') ||
+            voice.name.toLowerCase().includes('maged') ||
+            (!voice.name.toLowerCase().includes('female') && arabicVoices.indexOf(voice) === 0)
+          );
 
-      if (maleVoice) {
-        utterance.voice = maleVoice;
-      } else if (arabicVoices.length > 0) {
-        // Use first available Arabic voice
-        utterance.voice = arabicVoices[0];
-      }
+          if (maleVoice) {
+            utterance.voice = maleVoice;
+            console.log('Using male voice:', maleVoice.name);
+          } else {
+            utterance.voice = arabicVoices[0];
+            console.log('Using first Arabic voice:', arabicVoices[0].name);
+          }
+        } else {
+          console.log('No Arabic voices found, using default');
+        }
 
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.warn('Web Speech API is not supported in this browser');
+        // Add event listeners for debugging
+        utterance.onstart = () => console.log('Speech started');
+        utterance.onend = () => console.log('Speech ended');
+        utterance.onerror = (e) => {
+          console.error('Speech error:', e);
+          if (e.error === 'not-allowed') {
+            alert('Audio was blocked. Please click the speaker button again to allow audio.');
+          }
+        };
+
+        window.speechSynthesis.speak(utterance);
+      }, 100);
+    } catch (error) {
+      console.error('Error in speech synthesis:', error);
+      alert('Unable to play audio. Please try again or use a different browser (Chrome, Edge, or Safari recommended).');
     }
   };
 
