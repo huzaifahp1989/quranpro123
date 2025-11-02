@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen, Moon, Sun } from "lucide-react";
+import { Loader2, BookOpen, Moon, Sun, Book } from "lucide-react";
+import { Link } from "wouter";
 import { SurahSelector } from "@/components/SurahSelector";
 import { VerseDisplay } from "@/components/VerseDisplay";
 import { AudioPlayer } from "@/components/AudioPlayer";
@@ -107,19 +108,33 @@ export default function QuranReader() {
                 <p className="text-sm text-muted-foreground">The Noble Quran</p>
               </div>
             </div>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={toggleTheme}
-              data-testid="button-theme-toggle"
-              aria-label="Toggle theme"
-            >
-              {theme === 'dark' ? (
-                <Sun className="w-5 h-5" />
-              ) : (
-                <Moon className="w-5 h-5" />
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/hadith">
+                <Button
+                  variant="outline"
+                  size="default"
+                  data-testid="button-nav-hadith"
+                  className="gap-2"
+                >
+                  <Book className="w-4 h-4" />
+                  <span className="hidden sm:inline">Browse Hadith</span>
+                  <span className="sm:hidden">Hadith</span>
+                </Button>
+              </Link>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={toggleTheme}
+                data-testid="button-theme-toggle"
+                aria-label="Toggle theme"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-5 h-5" />
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
+              </Button>
+            </div>
           </div>
           
           {surahs && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Book, ArrowLeft, Loader2 } from "lucide-react";
+import { Search, Book, BookOpen, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,16 +84,6 @@ export default function HadithBrowser() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <Link href="/">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  data-testid="button-back-to-quran"
-                  aria-label="Back to Quran"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
               <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
                 <Book className="w-5 h-5 text-primary" />
               </div>
@@ -102,6 +92,18 @@ export default function HadithBrowser() {
                 <p className="text-sm text-muted-foreground">Authentic Traditions of Prophet Muhammad ﷺ</p>
               </div>
             </div>
+            <Link href="/">
+              <Button
+                variant="outline"
+                size="default"
+                data-testid="button-back-to-quran"
+                className="gap-2"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">Read Quran</span>
+                <span className="sm:hidden">Quran</span>
+              </Button>
+            </Link>
           </div>
 
           <div className="relative">
