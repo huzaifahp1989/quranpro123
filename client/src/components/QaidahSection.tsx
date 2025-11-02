@@ -205,92 +205,104 @@ const tajweedRules: TajweedRule[] = [
   }
 ];
 
+// Map Arabic letters to audio filenames (using Arabic character as key to avoid name duplicates)
+const letterAudioMap: { [key: string]: string } = {
+  "ا": "alif",
+  "ب": "baa",
+  "ت": "taa",
+  "ث": "thaa",
+  "ج": "jeem",
+  "ح": "haa",
+  "خ": "khaa",
+  "د": "dal",
+  "ذ": "thal",
+  "ر": "raa",
+  "ز": "zay",
+  "س": "seen",
+  "ش": "sheen",
+  "ص": "saad",
+  "ض": "daad",
+  "ط": "taa_h",     // Heavy Taa
+  "ظ": "zaa",       // Heavy Dhaa
+  "ع": "ayn",
+  "غ": "ghayn",
+  "ف": "faa",
+  "ق": "qaaf",
+  "ك": "kaaf",
+  "ل": "laam",
+  "م": "meem",
+  "ن": "noon",
+  "ه": "haa_h",     // Final Haa
+  "و": "waaw",
+  "ي": "yaa",
+};
+
 export function QaidahSection() {
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetter | null>(null);
   const [selectedRule, setSelectedRule] = useState<TajweedRule | null>(null);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
-  // Load available voices
+  // Cleanup audio on unmount
   useEffect(() => {
-    if ('speechSynthesis' in window) {
-      const loadVoices = () => {
-        const availableVoices = window.speechSynthesis.getVoices();
-        setVoices(availableVoices);
-      };
+    return () => {
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.src = '';
+      }
+    };
+  }, [currentAudio]);
 
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = loadVoices;
+  const playLetterAudio = (arabicLetter: string) => {
+    try {
+      // Stop any currently playing audio
+      if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+      }
 
-      return () => {
-        window.speechSynthesis.cancel();
+      // Get the audio filename for this letter
+      const audioFilename = letterAudioMap[arabicLetter];
+      if (!audioFilename) {
+        console.error(`No audio file found for letter: ${arabicLetter}`);
+        return;
+      }
+
+      // Create and play new audio
+      const audio = new Audio(`/audio/letters/${audioFilename}.mp3`);
+      audio.volume = 1.0;
+      
+      audio.onerror = (e) => {
+        console.error('Error loading audio:', e);
+        alert('Unable to load audio. Please try again.');
       };
+      
+      audio.play().catch(error => {
+        console.error('Error playing audio:', error);
+        alert('Unable to play audio. Please try again.');
+      });
+
+      setCurrentAudio(audio);
+    } catch (error) {
+      console.error('Error in audio playback:', error);
+      alert('Unable to play audio. Please try again.');
     }
-  }, []);
+  };
 
-  const speak = (text: string, lang: string = 'ar-SA') => {
+  // For Tajweed examples (full verses), use Web Speech API
+  const speak = (text: string) => {
     if (!('speechSynthesis' in window)) {
-      alert('Audio pronunciation is not supported in this browser. Please try opening in Chrome, Edge, or Safari.');
+      console.log('Speech synthesis not available');
       return;
     }
 
     try {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
-      
-      // Small delay to ensure cancellation completes
-      setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
-        utterance.rate = 0.7;
-        utterance.pitch = 0.9; // Slightly lower pitch for male voice
-        utterance.volume = 1.0;
-
-        // Get fresh voices list
-        const availableVoices = window.speechSynthesis.getVoices();
-        
-        // Try to find a male Arabic voice
-        const arabicVoices = availableVoices.filter(voice => 
-          voice.lang.startsWith('ar') || voice.lang.includes('ar')
-        );
-        
-        console.log('Available voices:', availableVoices.length);
-        console.log('Arabic voices:', arabicVoices.length);
-        
-        if (arabicVoices.length > 0) {
-          // Prefer male voices
-          const maleVoice = arabicVoices.find(voice => 
-            voice.name.toLowerCase().includes('male') ||
-            voice.name.toLowerCase().includes('majed') ||
-            voice.name.toLowerCase().includes('maged') ||
-            (!voice.name.toLowerCase().includes('female') && arabicVoices.indexOf(voice) === 0)
-          );
-
-          if (maleVoice) {
-            utterance.voice = maleVoice;
-            console.log('Using male voice:', maleVoice.name);
-          } else {
-            utterance.voice = arabicVoices[0];
-            console.log('Using first Arabic voice:', arabicVoices[0].name);
-          }
-        } else {
-          console.log('No Arabic voices found, using default');
-        }
-
-        // Add event listeners for debugging
-        utterance.onstart = () => console.log('Speech started');
-        utterance.onend = () => console.log('Speech ended');
-        utterance.onerror = (e) => {
-          console.error('Speech error:', e);
-          if (e.error === 'not-allowed') {
-            alert('Audio was blocked. Please click the speaker button again to allow audio.');
-          }
-        };
-
-        window.speechSynthesis.speak(utterance);
-      }, 100);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ar-SA';
+      utterance.rate = 0.7;
+      window.speechSynthesis.speak(utterance);
     } catch (error) {
       console.error('Error in speech synthesis:', error);
-      alert('Unable to play audio. Please try again or use a different browser (Chrome, Edge, or Safari recommended).');
     }
   };
 
@@ -325,12 +337,12 @@ export function QaidahSection() {
                     className="hover-elevate active-elevate-2 cursor-pointer transition-all"
                     onClick={() => {
                       setSelectedLetter(letter);
-                      speak(letter.arabic);
+                      playLetterAudio(letter.arabic);
                     }}
                     data-testid={`letter-${letter.name.toLowerCase()}-${letter.transliteration.toLowerCase()}`}
                   >
-                    <CardContent className="p-4 text-center flex flex-col items-center gap-3 min-h-[140px]">
-                      <div className="text-4xl font-arabic leading-none">{letter.arabic}</div>
+                    <CardContent className="p-4 text-center flex flex-col items-center justify-between gap-4 min-h-[180px]">
+                      <div className="text-5xl font-arabic leading-none mt-2">{letter.arabic}</div>
                       <div className="flex flex-col gap-1 w-full">
                         <div className="text-sm font-semibold break-words px-1">{letter.name}</div>
                         <div className="text-xs text-muted-foreground break-words px-1">{letter.transliteration}</div>
@@ -341,7 +353,7 @@ export function QaidahSection() {
                         className="h-7 w-7 flex-shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          speak(letter.arabic);
+                          playLetterAudio(letter.arabic);
                         }}
                         aria-label={`Hear pronunciation of ${letter.name}`}
                         data-testid={`button-speak-${letter.name.toLowerCase()}-${letter.transliteration.toLowerCase()}`}
