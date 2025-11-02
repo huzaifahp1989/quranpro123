@@ -177,131 +177,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/hadiths/:collection", async (req, res) => {
     try {
       const { collection } = req.params;
-      const { search } = req.query;
+      const { search, page = 1 } = req.query;
 
       // Validate collection
-      const validCollections = ['bukhari', 'muslim'];
+      const validCollections = ['bukhari', 'muslim', 'abudawud', 'tirmidhi', 'ibnmajah', 'nasai', 'malik'];
       if (!validCollections.includes(collection)) {
         return res.status(400).json({ 
-          error: "Invalid collection. Must be 'bukhari' or 'muslim'" 
+          error: "Invalid collection. Must be one of: bukhari, muslim, abudawud, tirmidhi, ibnmajah, nasai, malik" 
         });
       }
 
-      // Sample hadith data (in production, this would come from an API or database)
-      const sampleHadiths = {
-        bukhari: [
-          {
-            collection: "Sahih al-Bukhari",
-            bookNumber: "1",
-            hadithNumber: "1",
-            arabicText: "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
-            englishText: "The deeds are considered by the intentions, and a person will get the reward according to his intention.",
-            urduText: "اعمال کا دارومدار نیتوں پر ہے اور ہر شخص کو وہی ملے گا جو اس نے نیت کی ہے۔",
-            narrator: "Umar ibn Al-Khattab",
-            grade: "Sahih",
-            reference: "Sahih al-Bukhari 1",
-          },
-          {
-            collection: "Sahih al-Bukhari",
-            bookNumber: "2",
-            hadithNumber: "8",
-            arabicText: "أُمِرْتُ أَنْ أُقَاتِلَ النَّاسَ حَتَّى يَشْهَدُوا أَنْ لاَ إِلَهَ إِلاَّ اللَّهُ",
-            englishText: "I have been ordered to fight against the people until they testify that none has the right to be worshipped but Allah.",
-            urduText: "مجھے حکم دیا گیا ہے کہ لوگوں سے اس وقت تک جنگ کروں جب تک وہ گواہی نہ دیں کہ اللہ کے سوا کوئی معبود نہیں۔",
-            narrator: "Abdullah bin Umar",
-            grade: "Sahih",
-            reference: "Sahih al-Bukhari 25",
-          },
-          {
-            collection: "Sahih al-Bukhari",
-            bookNumber: "2",
-            hadithNumber: "13",
-            arabicText: "لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ",
-            englishText: "None of you truly believes until he loves for his brother what he loves for himself.",
-            urduText: "تم میں سے کوئی شخص مومن نہیں ہو سکتا جب تک کہ وہ اپنے بھائی کے لیے وہی پسند نہ کرے جو اپنے لیے پسند کرتا ہے۔",
-            narrator: "Anas",
-            grade: "Sahih",
-            reference: "Sahih al-Bukhari 13",
-          },
-          {
-            collection: "Sahih al-Bukhari",
-            bookNumber: "8",
-            hadithNumber: "76",
-            arabicText: "مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ",
-            englishText: "Whoever believes in Allah and the Last Day should speak good or remain silent.",
-            urduText: "جو شخص اللہ اور آخرت کے دن پر ایمان رکھتا ہے اسے چاہیے کہ بھلائی کی بات کرے یا خاموش رہے۔",
-            narrator: "Abu Hurairah",
-            grade: "Sahih",
-            reference: "Sahih al-Bukhari 6018",
-          },
-        ],
-        muslim: [
-          {
-            collection: "Sahih Muslim",
-            bookNumber: "1",
-            hadithNumber: "1",
-            arabicText: "الدِّينُ النَّصِيحَةُ",
-            englishText: "Religion is sincerity and sincere advice.",
-            urduText: "دین خیرخواہی کا نام ہے۔",
-            narrator: "Tamim al-Dari",
-            grade: "Sahih",
-            reference: "Sahih Muslim 55",
-          },
-          {
-            collection: "Sahih Muslim",
-            bookNumber: "1",
-            hadithNumber: "5",
-            arabicText: "مَنْ غَشَّنَا فَلَيْسَ مِنَّا",
-            englishText: "Whoever deceives us is not one of us.",
-            urduText: "جو ہمیں دھوکہ دے وہ ہم میں سے نہیں۔",
-            narrator: "Abu Hurairah",
-            grade: "Sahih",
-            reference: "Sahih Muslim 101",
-          },
-          {
-            collection: "Sahih Muslim",
-            bookNumber: "1",
-            hadithNumber: "9",
-            arabicText: "الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ",
-            englishText: "The Muslim is the one from whose tongue and hand the Muslims are safe.",
-            urduText: "مسلمان وہ ہے جس کی زبان اور ہاتھ سے دوسرے مسلمان محفوظ رہیں۔",
-            narrator: "Abdullah bin Amr",
-            grade: "Sahih",
-            reference: "Sahih Muslim 40",
-          },
-          {
-            collection: "Sahih Muslim",
-            bookNumber: "33",
-            hadithNumber: "6370",
-            arabicText: "تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ",
-            englishText: "Your smile in the face of your brother is charity.",
-            urduText: "اپنے بھائی کے چہرے پر مسکرانا صدقہ ہے۔",
-            narrator: "Abu Dharr",
-            grade: "Sahih",
-            reference: "Sahih Muslim 2626",
-          },
-        ],
-      };
-
-      let hadiths = sampleHadiths[collection as keyof typeof sampleHadiths] || [];
-
-      // Filter by search query if provided
-      if (search && typeof search === 'string') {
-        const searchLower = search.toLowerCase();
-        hadiths = hadiths.filter((hadith: any) =>
-          hadith.englishText.toLowerCase().includes(searchLower) ||
-          hadith.arabicText.includes(search) ||
-          hadith.urduText.includes(search) ||
-          hadith.narrator.toLowerCase().includes(searchLower)
-        );
+      const pageNum = parseInt(page as string) || 1;
+      const pageSize = 20;
+      
+      const cacheKey = `hadiths-v2-${collection}-${pageNum}-${search || ''}`;
+      const cached = getFromCache(cacheKey);
+      if (cached) {
+        return res.json(cached);
       }
 
-      res.json(hadiths);
-    } catch (error) {
-      console.error("Error fetching hadiths:", error);
-      res.status(500).json({ error: "Internal server error" });
+      // Use fawazahmed0 Hadith API (CDN-hosted, no auth required)
+      // https://github.com/fawazahmed0/hadith-api
+      const HADITH_CDN = 'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1';
+      const editionName = `eng-${collection}`; // English editions
+      const url = `${HADITH_CDN}/editions/${editionName}.json`;
+      
+      const response = await axios.get(url, { timeout: 15000 });
+
+      if (response.data && response.data.hadiths) {
+        let allHadiths = response.data.hadiths;
+        
+        // Apply search filter if provided
+        if (search && typeof search === 'string') {
+          const searchLower = search.toLowerCase();
+          allHadiths = allHadiths.filter((h: any) => 
+            h.text?.toLowerCase().includes(searchLower) ||
+            h.arabicnumber?.toString().includes(search) ||
+            h.hadithnumber?.toString().includes(search)
+          );
+        }
+
+        // Paginate results
+        const start = (pageNum - 1) * pageSize;
+        const end = start + pageSize;
+        const paginatedHadiths = allHadiths.slice(start, end);
+
+        const result = {
+          collection: collection,
+          hadiths: paginatedHadiths.map((h: any) => ({
+            number: h.hadithnumber || h.arabicnumber,
+            arabicText: '', // API doesn't provide Arabic in English edition
+            englishText: h.text || '',
+            hadithNumber: (h.hadithnumber || h.arabicnumber || '').toString(),
+            narrator: '',
+            book: collection,
+            collection: collection,
+            urduText: '', // Not available in English edition
+            reference: `${collection.charAt(0).toUpperCase() + collection.slice(1)} ${h.hadithnumber || h.arabicnumber || ''}`,
+            // Serialize grades: if array has objects, map to readable strings; if empty, undefined
+            grade: h.grades && h.grades.length > 0 
+              ? h.grades.map((g: any) => typeof g === 'object' ? `${g.name || ''}: ${g.grade || ''}`.trim() : String(g)).join(', ')
+              : undefined
+          })),
+          page: pageNum,
+          pageSize: pageSize,
+          hasMore: end < allHadiths.length,
+          total: allHadiths.length
+        };
+
+        // Cache for longer (data is static on CDN)
+        setCache(cacheKey, result);
+        res.json(result);
+      } else {
+        res.status(500).json({ error: "Failed to fetch hadiths" });
+      }
+    } catch (error: any) {
+      console.error("Error fetching hadiths:", error.message);
+      if (error.response?.status === 404) {
+        res.status(404).json({ error: "Hadith collection not found. Try: bukhari, muslim, abudawud, tirmidhi, ibnmajah" });
+      } else if (error.code === 'ECONNABORTED') {
+        res.status(504).json({ error: "Request timeout - please try again" });
+      } else {
+        res.status(500).json({ error: "Failed to load hadiths. Please try again." });
+      }
     }
   });
+
+  // Alternative: Use random hadith API for variety
+  app.get("/api/hadiths/:collection/random", async (req, res) => {
+    try {
+      const { collection } = req.params;
+      
+      const validCollections = ['bukhari', 'muslim', 'abudawud', 'tirmidhi', 'ibnmajah'];
+      if (!validCollections.includes(collection)) {
+        return res.status(400).json({ error: "Invalid collection" });
+      }
+
+      const RANDOM_HADITH_API = 'https://random-hadith-generator.vercel.app';
+      const response = await axios.get(`${RANDOM_HADITH_API}/${collection}/`, { timeout: 10000 });
+
+      if (response.data?.data) {
+        const hadith = response.data.data;
+        res.json({
+          hadithNumber: '1',
+          arabicText: '',
+          englishText: hadith.hadith_english || '',
+          narrator: hadith.narrator || '',
+          book: collection,
+          urduText: ''
+        });
+      } else {
+        res.status(500).json({ error: "Failed to fetch random hadith" });
+      }
+    } catch (error: any) {
+      console.error("Error fetching random hadith:", error.message);
+      res.status(500).json({ error: "Failed to load hadith" });
+    }
+  });
+
 
   const httpServer = createServer(app);
   return httpServer;

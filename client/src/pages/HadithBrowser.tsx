@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Book, ArrowLeft, Loader2 } from "lucide-react";
 import { Link } from "wouter";
@@ -9,19 +9,74 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Hadith, HadithCollection } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface HadithApiResponse {
+  collection: string;
+  hadiths: Hadith[];
+  page: number;
+  pageSize: number;
+  hasMore: boolean;
+}
+
 export default function HadithBrowser() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCollection, setSelectedCollection] = useState("bukhari");
+  const [page, setPage] = useState(1);
+  const [accumulatedHadiths, setAccumulatedHadiths] = useState<Hadith[]>([]);
 
-  const { data: hadiths, isLoading } = useQuery<Hadith[]>({
-    queryKey: ['/api/hadiths', selectedCollection, searchQuery],
+  // Construct query parameters
+  const queryParams = new URLSearchParams();
+  queryParams.set('page', page.toString());
+  if (searchQuery) {
+    queryParams.set('search', searchQuery);
+  }
+  
+  const apiUrl = `/api/hadiths/${selectedCollection}?${queryParams.toString()}`;
+  
+  const { data, isLoading, isFetching } = useQuery<HadithApiResponse>({
+    queryKey: [apiUrl],
     enabled: selectedCollection !== "",
   });
+
+  // Accumulate hadiths when new data arrives
+  useEffect(() => {
+    if (data?.hadiths) {
+      if (page === 1) {
+        // Reset accumulated hadiths for first page or new collection
+        setAccumulatedHadiths(data.hadiths);
+      } else {
+        // Append new hadiths for subsequent pages
+        setAccumulatedHadiths(prev => [...prev, ...data.hadiths]);
+      }
+    }
+  }, [data, page]);
 
   const collections: HadithCollection[] = [
     { name: "bukhari", englishName: "Sahih al-Bukhari", numberOfHadiths: 7563 },
     { name: "muslim", englishName: "Sahih Muslim", numberOfHadiths: 7190 },
+    { name: "abudawud", englishName: "Sunan Abu Dawud", numberOfHadiths: 5274 },
+    { name: "tirmidhi", englishName: "Jami' At-Tirmidhi", numberOfHadiths: 3956 },
+    { name: "ibnmajah", englishName: "Sunan Ibn Majah", numberOfHadiths: 4341 },
+    { name: "nasai", englishName: "Sunan an-Nasa'i", numberOfHadiths: 5758 },
+    { name: "malik", englishName: "Muwatta Malik", numberOfHadiths: 1826 },
   ];
+
+  const handleLoadMore = () => {
+    setPage(prev => prev + 1);
+  };
+
+  const handleCollectionChange = (value: string) => {
+    setSelectedCollection(value);
+    setPage(1); // Reset page when changing collection
+    setAccumulatedHadiths([]); // Clear accumulated hadiths
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1); // Reset page when searching
+    setAccumulatedHadiths([]); // Clear accumulated hadiths for search
+  };
+
+  const hadiths = accumulatedHadiths;
 
   return (
     <div className="min-h-screen bg-background">
@@ -54,7 +109,7 @@ export default function HadithBrowser() {
             <Input
               placeholder="Search hadiths..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10 h-12"
               data-testid="input-search-hadith"
             />
@@ -63,13 +118,14 @@ export default function HadithBrowser() {
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-8">
-        <Tabs value={selectedCollection} onValueChange={setSelectedCollection}>
-          <TabsList className="mb-6">
+        <Tabs value={selectedCollection} onValueChange={handleCollectionChange}>
+          <TabsList className="mb-6 flex-wrap h-auto gap-2">
             {collections.map((collection) => (
               <TabsTrigger
                 key={collection.name}
                 value={collection.name}
                 data-testid={`tab-collection-${collection.name}`}
+                className="text-xs sm:text-sm"
               >
                 {collection.englishName}
               </TabsTrigger>
@@ -93,11 +149,33 @@ export default function HadithBrowser() {
                   ))}
                 </div>
               ) : hadiths && hadiths.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6" data-testid="container-hadiths">
-                  {hadiths.map((hadith, index) => (
-                    <HadithCard key={`${hadith.collection}-${hadith.hadithNumber}-${index}`} hadith={hadith} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" data-testid="container-hadiths">
+                    {hadiths.map((hadith, index) => (
+                      <HadithCard key={`${hadith.book}-${hadith.hadithNumber}-${index}`} hadith={hadith} />
+                    ))}
+                  </div>
+                  {data?.hasMore && (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleLoadMore}
+                        disabled={isFetching}
+                        data-testid="button-load-more-hadiths"
+                        variant="outline"
+                        size="lg"
+                      >
+                        {isFetching ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Load More Hadiths"
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   {searchQuery ? (
