@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -240,26 +240,19 @@ const letterAudioMap: { [key: string]: string } = {
 export function QaidahSection() {
   const [selectedLetter, setSelectedLetter] = useState<ArabicLetter | null>(null);
   const [selectedRule, setSelectedRule] = useState<TajweedRule | null>(null);
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Cleanup audio on unmount
   useEffect(() => {
     return () => {
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.src = '';
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
       }
     };
-  }, [currentAudio]);
+  }, []);
 
   const playLetterAudio = (arabicLetter: string) => {
     try {
-      // Stop any currently playing audio
-      if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0;
-      }
-
       // Get the audio filename for this letter
       const audioFilename = letterAudioMap[arabicLetter];
       if (!audioFilename) {
@@ -267,24 +260,47 @@ export function QaidahSection() {
         return;
       }
 
-      // Create and play new audio
-      const audio = new Audio(`/audio/letters/${audioFilename}.mp3`);
+      // Simply pause any currently playing audio (don't clear src)
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+      }
+
+      // Create new audio element
+      const audioUrl = `/audio/letters/${audioFilename}.mp3`;
+      const audio = new Audio(audioUrl);
       audio.volume = 1.0;
       
-      audio.onerror = (e) => {
-        console.error('Error loading audio:', e);
-        alert('Unable to load audio. Please try again.');
-      };
+      // Store reference to current audio
+      currentAudioRef.current = audio;
       
-      audio.play().catch(error => {
-        console.error('Error playing audio:', error);
-        alert('Unable to play audio. Please try again.');
+      // Wait for audio to be ready before playing
+      audio.addEventListener('canplaythrough', () => {
+        // Only play if this is still the current audio (prevents old audios from playing)
+        if (currentAudioRef.current === audio) {
+          audio.play().catch(error => {
+            console.error('Error playing audio:', audioFilename, error);
+          });
+        }
+      }, { once: true });
+      
+      audio.addEventListener('error', (e) => {
+        const target = e.target as HTMLAudioElement;
+        // Only log errors for the current audio
+        if (currentAudioRef.current === audio) {
+          const errorCode = target.error?.code;
+          const errorMsg = target.error?.message || 'Unknown error';
+          console.error(`Audio load error for ${audioFilename}:`, {
+            code: errorCode,
+            message: errorMsg,
+            url: audioUrl
+          });
+        }
       });
-
-      setCurrentAudio(audio);
+      
+      // Start loading the audio
+      audio.load();
     } catch (error) {
       console.error('Error in audio playback:', error);
-      alert('Unable to play audio. Please try again.');
     }
   };
 
