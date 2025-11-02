@@ -42,7 +42,7 @@ export default function QuranReader() {
     queryKey: ['/api/surahs'],
   });
 
-  const { data: verses, isLoading: isVersesLoading } = useQuery<VerseWithTranslations[]>({
+  const { data: verses, isLoading: isVersesLoading, error: versesError } = useQuery<VerseWithTranslations[]>({
     queryKey: ['/api/surah', selectedSurah, selectedReciter],
     enabled: selectedSurah > 0,
   });
@@ -215,10 +215,29 @@ export default function QuranReader() {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <BookOpen className="w-16 h-16 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium mb-2">No verses found</p>
-            <p className="text-sm text-muted-foreground">
-              Please select a surah to start reading
-            </p>
+            {versesError ? (
+              <>
+                <p className="text-lg font-medium mb-2 text-destructive">Failed to load verses</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  {versesError instanceof Error ? versesError.message : "Unable to load Quran verses. Please check your internet connection and try again."}
+                </p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => window.location.reload()}
+                  data-testid="button-retry"
+                >
+                  Reload Page
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-lg font-medium mb-2">No verses found</p>
+                <p className="text-sm text-muted-foreground">
+                  Please select a surah to start reading
+                </p>
+              </>
+            )}
           </div>
         )}
       </main>
