@@ -76,9 +76,10 @@
   --chart-4: 16 78% 42%;
   --chart-5: 280 58% 35%;
 
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: 'Inter', 'Noto Sans', sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
+  --font-arabic: 'Amiri Quran', 'Scheherazade New', serif;
   --radius: .5rem; /* 8px */
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.02);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.03);
