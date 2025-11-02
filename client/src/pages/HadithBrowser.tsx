@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Book, BookOpen, Loader2 } from "lucide-react";
+import { Search, Book, BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,18 +92,32 @@ export default function HadithBrowser() {
                 <p className="text-sm text-muted-foreground">Authentic Traditions of Prophet Muhammad ﷺ</p>
               </div>
             </div>
-            <Link href="/">
-              <Button
-                variant="outline"
-                size="default"
-                data-testid="button-back-to-quran"
-                className="gap-2"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden sm:inline">Read Quran</span>
-                <span className="sm:hidden">Quran</span>
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/kids">
+                <Button
+                  variant="outline"
+                  size="default"
+                  data-testid="button-nav-kids"
+                  className="gap-2"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hidden md:inline">Kids Learning</span>
+                  <span className="md:hidden">Kids</span>
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button
+                  variant="outline"
+                  size="default"
+                  data-testid="button-back-to-quran"
+                  className="gap-2"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span className="hidden md:inline">Read Quran</span>
+                  <span className="md:hidden">Quran</span>
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <div className="relative">
@@ -154,7 +168,7 @@ export default function HadithBrowser() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8" data-testid="container-hadiths">
                     {hadiths.map((hadith, index) => (
-                      <HadithCard key={`${hadith.book}-${hadith.hadithNumber}-${index}`} hadith={hadith} />
+                      <HadithCard key={`${hadith.collection}-${hadith.hadithNumber}-${index}`} hadith={hadith} />
                     ))}
                   </div>
                   {data?.hasMore && (

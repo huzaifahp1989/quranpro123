@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Book } from "lucide-react";
 import QuranReader from "@/pages/QuranReader";
 import HadithBrowser from "@/pages/HadithBrowser";
+import KidsLearning from "@/pages/KidsLearning";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={QuranReader} />
       <Route path="/hadith" component={HadithBrowser} />
+      <Route path="/kids" component={KidsLearning} />
       <Route component={NotFound} />
     </Switch>
   );

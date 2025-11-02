@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen, Moon, Sun, Book } from "lucide-react";
+import { Loader2, BookOpen, Moon, Sun, Book, GraduationCap } from "lucide-react";
 import { Link } from "wouter";
 import { SurahSelector } from "@/components/SurahSelector";
 import { VerseDisplay } from "@/components/VerseDisplay";
@@ -77,7 +77,7 @@ export default function QuranReader() {
 
   const handleVerseClick = (verseNumber: number) => {
     const verseIndex = verses?.findIndex(v => v.ayah.number === verseNumber);
-    if (verseIndex !== undefined && verseIndex >= 0) {
+    if (verses && verseIndex !== undefined && verseIndex >= 0) {
       setSelectedVerseForTafseer(verses[verseIndex].ayah.numberInSurah);
       setIsTafseerOpen(true);
     }
@@ -109,6 +109,18 @@ export default function QuranReader() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link href="/kids">
+                <Button
+                  variant="outline"
+                  size="default"
+                  data-testid="button-nav-kids"
+                  className="gap-2"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span className="hidden md:inline">Kids Learning</span>
+                  <span className="md:hidden">Kids</span>
+                </Button>
+              </Link>
               <Link href="/hadith">
                 <Button
                   variant="outline"
@@ -117,8 +129,8 @@ export default function QuranReader() {
                   className="gap-2"
                 >
                   <Book className="w-4 h-4" />
-                  <span className="hidden sm:inline">Browse Hadith</span>
-                  <span className="sm:hidden">Hadith</span>
+                  <span className="hidden md:inline">Browse Hadith</span>
+                  <span className="md:hidden">Hadith</span>
                 </Button>
               </Link>
               <Button

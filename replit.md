@@ -9,6 +9,16 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 - **Translations**: Side-by-side Urdu and English translations for each verse
 - **Tafseer**: Verse-by-verse Islamic commentary with expandable panel
 - **Hadith Collection**: Browse authentic Hadith from Sahih al-Bukhari and Sahih Muslim
+- **Kids Learning Section**: Interactive Quran learning for children with:
+  - Juz Amma (30th Part - Surahs 78-114)
+  - Surah Yasin (The Heart of the Quran)
+  - Surah Al-Mulk (Protection from Grave Punishment)
+  - Surah Al-Waqiah (The Inevitable Event)
+  - Audio from Sheikh Minshawi and Sheikh Huzaify
+  - Repeat mode for verse practice
+  - Play/Pause/Stop controls
+  - Volume adjustment
+  - Side-by-side Urdu and English translations
 - **Dark Mode**: Full dark mode support with theme persistence
 - **Responsive Design**: Mobile-first design with tablet and desktop optimization
 
@@ -50,6 +60,7 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 ### Pages
 1. **QuranReader** (/): Main Quran reading interface
 2. **HadithBrowser** (/hadith): Hadith collection browser
+3. **KidsLearning** (/kids): Interactive Quran learning for children
 
 ## API Endpoints (Backend)
 
@@ -77,6 +88,8 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
     - `quran-uthmani` - Arabic text (Uthmani script)
     - `ar.alafasy` - Audio by Mishary Alafasy
     - `ar.abdulbasitmurattal` - Audio by Abdul Basit
+    - `ar.minshawi` - Audio by Mohamed Siddiq al-Minshawi (Murattal)
+    - `ar.huzaify` - Audio by Ali Bin Abdur-Rahman Al-Huthaify
     - `ur.jalandhry` - Urdu translation
     - `en.sahih` - English translation (Sahih International)
 
@@ -122,6 +135,15 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 - Consistent gap between elements (gap-3, gap-4)
 
 ## Recent Changes (November 2025)
+- ✅ **Kids Learning Section Added** - Interactive Quran learning page for children
+  - Created dedicated /kids route with tabbed interface
+  - Implemented audio player with repeat mode, stop, and volume controls
+  - Added 4 learning sections: Juz Amma (30th Part), Surah Yasin, Surah Al-Mulk, Surah Al-Waqiah
+  - Integrated Sheikh Minshawi and Sheikh Huzaify audio reciters
+  - Verse navigation with previous/next controls
+  - Side-by-side translations (Urdu and English) for learning
+  - Auto-advance to next verse when not in repeat mode
+  - Added navigation buttons across all pages for easy access
 - ✅ **Database Setup Complete** - PostgreSQL with Drizzle ORM (Task 2)
   - Created users, bookmarks, reading_position, user_preferences tables
   - Implemented DatabaseStorage with full CRUD operations
@@ -152,12 +174,25 @@ A comprehensive Quran reading application with audio recitation, Urdu and Englis
 5. Click any verse to view its Tafseer (commentary)
 
 ### Browsing Hadith
-1. Click the book icon button (bottom left) to navigate to Hadith collection
+1. Click the "Browse Hadith" button in the header to navigate to Hadith collection
 2. Choose from 7 authentic collections via tabs (Sahih Bukhari, Muslim, Abu Dawud, Tirmidhi, Ibn Majah, Nasa'i, Muwatta Malik)
 3. Browse hadiths with English translations (20 per page)
 4. Click "Load More Hadiths" to load additional pages
 5. Use the search box to filter hadiths by keywords
 6. Each hadith shows: collection badge, hadith number, English narration, and reference
+
+### Kids Learning
+1. Click "Kids Learning" button in the header to access the learning section
+2. Choose from tabs: Juz Amma, Surah Yasin, Surah Al-Mulk, or Surah Al-Waqiah
+3. Select your preferred reciter (Sheikh Minshawi or Sheikh Huzaify)
+4. Each verse displays Arabic text with Urdu and English translations
+5. Audio controls:
+   - **Play/Pause**: Start or pause recitation
+   - **Stop**: Stop playback and reset to beginning
+   - **Repeat**: Toggle repeat mode to practice the same verse
+   - **Previous/Next**: Navigate between verses
+   - **Volume**: Adjust audio volume with slider
+6. Audio automatically advances to the next verse unless repeat mode is on
 
 ### Dark Mode
 - Click the sun/moon icon in the header to toggle between light and dark themes
