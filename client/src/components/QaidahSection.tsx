@@ -267,6 +267,7 @@ export function QaidahSection() {
 
       // Create new audio element
       const audioUrl = `/audio/letters/${audioFilename}.mp3`;
+      console.log(`🔊 Playing letter ${arabicLetter} (${audioFilename}) from ${audioUrl}`);
       const audio = new Audio(audioUrl);
       audio.volume = 1.0;
       
