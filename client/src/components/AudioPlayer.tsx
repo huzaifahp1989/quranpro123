@@ -17,6 +17,7 @@ interface AudioPlayerProps {
   isLoading?: boolean;
   onPlayingChange?: (isPlaying: boolean) => void;
   shouldAutoPlay?: boolean;
+  isPlaying?: boolean; // External playing state from parent
 }
 
 export function AudioPlayer({
@@ -30,9 +31,24 @@ export function AudioPlayer({
   onReciterChange,
   isLoading,
   onPlayingChange,
-  shouldAutoPlay
+  shouldAutoPlay,
+  isPlaying: externalIsPlaying
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+
+  // Sync internal playing state with external state from parent
+  useEffect(() => {
+    if (externalIsPlaying !== undefined && externalIsPlaying !== isPlaying) {
+      setIsPlaying(externalIsPlaying);
+      if (audioRef.current) {
+        if (externalIsPlaying) {
+          audioRef.current.play().catch(() => {});
+        } else {
+          audioRef.current.pause();
+        }
+      }
+    }
+  }, [externalIsPlaying]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
@@ -69,15 +85,12 @@ export function AudioPlayer({
         // Repeat the same verse
         audio.currentTime = 0;
         audio.play();
-      } else if (currentVerse < totalVerses) {
-        // Keep isPlaying true so auto-play continues
+      } else {
+        // Always call onNext - let parent (QuranReader) decide if there's more content
+        // This enables continuous playback across surahs
         setTimeout(() => {
           onNext();
         }, 300);
-      } else {
-        // Only stop playing if we reached the end
-        setIsPlaying(false);
-        onPlayingChange?.(false);
       }
     };
 
@@ -231,7 +244,7 @@ export function AudioPlayer({
                 size="icon"
                 variant="ghost"
                 onClick={onPrevious}
-                disabled={currentVerse <= 1 || isLoading}
+                disabled={isLoading}
                 data-testid="button-previous-verse"
                 aria-label="Previous verse"
                 className="h-9 w-9 sm:h-10 sm:w-10"
@@ -271,7 +284,7 @@ export function AudioPlayer({
                 size="icon"
                 variant="ghost"
                 onClick={onNext}
-                disabled={currentVerse >= totalVerses || isLoading}
+                disabled={isLoading}
                 data-testid="button-next-verse"
                 aria-label="Next verse"
                 className="h-9 w-9 sm:h-10 sm:w-10"

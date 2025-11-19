@@ -60,11 +60,22 @@ export default function QuranReader() {
     setSelectedSurah(surahNumber);
     setCurrentVerse(1);
     setSelectedVerseForTafseer(null);
+    // Pause playback when user manually changes surah
+    setIsAudioPlaying(false);
+    setShouldAutoPlay(false);
   };
 
   const handlePreviousVerse = () => {
     if (currentVerse > 1) {
       setCurrentVerse(currentVerse - 1);
+    } else if (selectedSurah > 1) {
+      // Go to previous surah's last verse
+      const previousSurah = surahs?.find(s => s.number === selectedSurah - 1);
+      if (previousSurah) {
+        setSelectedSurah(selectedSurah - 1);
+        // Will be set to last verse once data loads
+        setCurrentVerse(previousSurah.numberOfAyahs);
+      }
     }
   };
 
@@ -73,6 +84,14 @@ export default function QuranReader() {
       const nextVerse = currentVerse + 1;
       setCurrentVerse(nextVerse);
       // Auto-play will be handled by AudioPlayer useEffect when audioUrl changes
+    } else if (selectedSurah < 114) {
+      // Move to next surah when current surah finishes
+      setSelectedSurah(selectedSurah + 1);
+      setCurrentVerse(1);
+      // Keep audio playing when auto-advancing to next surah
+    } else {
+      // Reached the end of the entire Quran (Surah 114, last verse)
+      setIsAudioPlaying(false);
     }
   };
 
@@ -85,6 +104,10 @@ export default function QuranReader() {
   };
 
   const handlePlayVerseClick = (verseNumberInSurah: number) => {
+    // Pause if clicking on a different verse
+    if (verseNumberInSurah !== currentVerse) {
+      setIsAudioPlaying(false);
+    }
     setCurrentVerse(verseNumberInSurah);
     setShouldAutoPlay(true);
   };
@@ -255,6 +278,7 @@ export default function QuranReader() {
           isLoading={isVersesLoading}
           onPlayingChange={setIsAudioPlaying}
           shouldAutoPlay={shouldAutoPlay}
+          isPlaying={isAudioPlaying}
         />
       )}
 
