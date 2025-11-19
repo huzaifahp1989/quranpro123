@@ -383,7 +383,7 @@ export function QaidahSection() {
               </div>
 
               {selectedLetter && (
-                <Card className="mt-4 sm:mt-6 bg-primary/5">
+                <Card className="mt-4 sm:mt-6 bg-primary/5" data-testid="qaidah-letter-details">
                   <CardHeader className="pb-3 sm:pb-6">
                     <CardTitle className="flex items-center gap-3 sm:gap-4">
                       <span className="text-4xl sm:text-5xl font-arabic">{selectedLetter.arabic}</span>
@@ -398,7 +398,7 @@ export function QaidahSection() {
                       <p className="text-sm font-medium mb-2">Pronunciation:</p>
                       <p className="text-sm text-muted-foreground">{selectedLetter.pronunciation}</p>
                     </div>
-                    <div>
+                    <div data-testid="qaidah-letter-forms">
                       <p className="text-sm font-medium mb-2">Letter Forms (positions in word):</p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="text-center">
