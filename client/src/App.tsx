@@ -27,18 +27,6 @@ function App() {
       <TooltipProvider>
         <Router />
         <Toaster />
-        
-        <Link href="/hadith">
-          <Button
-            size="icon"
-            variant="default"
-            className="fixed bottom-36 left-6 h-14 w-14 rounded-full shadow-lg z-30"
-            data-testid="button-navigate-hadith"
-            aria-label="Browse Hadiths"
-          >
-            <Book className="w-6 h-6" />
-          </Button>
-        </Link>
       </TooltipProvider>
     </QueryClientProvider>
   );

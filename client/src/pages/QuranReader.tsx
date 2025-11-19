@@ -134,40 +134,40 @@ export default function QuranReader() {
   return (
     <div className="min-h-screen bg-background pb-32">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <BookOpen className="w-5 h-5 text-primary" />
+        <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <div>
-                <h1 className="text-xl font-semibold">Al-Quran Al-Kareem</h1>
-                <p className="text-sm text-muted-foreground">The Noble Quran</p>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-xl font-semibold truncate">Al-Quran Al-Kareem</h1>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">The Noble Quran</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Link href="/kids">
                 <Button
                   variant="outline"
-                  size="default"
+                  size="sm"
                   data-testid="button-nav-kids"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 h-8 sm:h-9"
                 >
-                  <GraduationCap className="w-4 h-4" />
+                  <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden md:inline">Kids Learning</span>
-                  <span className="md:hidden">Kids</span>
+                  <span className="md:hidden text-xs">Kids</span>
                 </Button>
               </Link>
               <Link href="/hadith">
                 <Button
                   variant="outline"
-                  size="default"
+                  size="sm"
                   data-testid="button-nav-hadith"
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 h-8 sm:h-9"
                 >
-                  <Book className="w-4 h-4" />
+                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span className="hidden md:inline">Browse Hadith</span>
-                  <span className="md:hidden">Hadith</span>
+                  <span className="md:hidden text-xs">Hadith</span>
                 </Button>
               </Link>
               <Button
@@ -176,11 +176,12 @@ export default function QuranReader() {
                 onClick={toggleTheme}
                 data-testid="button-theme-toggle"
                 aria-label="Toggle theme"
+                className="h-8 w-8 sm:h-9 sm:w-9"
               >
                 {theme === 'dark' ? (
-                  <Sun className="w-5 h-5" />
+                  <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
                 ) : (
-                  <Moon className="w-5 h-5" />
+                  <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
                 )}
               </Button>
             </div>
@@ -197,16 +198,16 @@ export default function QuranReader() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 sm:px-12 py-8 sm:py-12">
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
         {currentSurah && (
-          <div className="mb-8 text-center">
-            <h2 className="font-arabic text-4xl mb-2" data-testid="text-surah-name-arabic">
+          <div className="mb-6 sm:mb-8 text-center">
+            <h2 className="font-arabic text-3xl sm:text-4xl mb-2" data-testid="text-surah-name-arabic">
               {currentSurah.name}
             </h2>
-            <p className="text-xl font-semibold mb-1" data-testid="text-surah-name-english">
+            <p className="text-lg sm:text-xl font-semibold mb-1" data-testid="text-surah-name-english">
               {currentSurah.englishName}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {currentSurah.englishNameTranslation} • {currentSurah.numberOfAyahs} Verses • {currentSurah.revelationType}
             </p>
           </div>

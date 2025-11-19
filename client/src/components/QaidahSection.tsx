@@ -336,18 +336,18 @@ export function QaidahSection() {
         </TabsList>
 
         <TabsContent value="alphabet">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Alif Baa - Learn Arabic Alphabet</span>
-                <span className="font-arabic text-2xl">حروف الهجاء</span>
+          <Card className="mb-4 sm:mb-6">
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span className="text-base sm:text-lg">Alif Baa - Learn Arabic Alphabet</span>
+                <span className="font-arabic text-xl sm:text-2xl">حروف الهجاء</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 28 letters of the Arabic alphabet with pronunciation guide. Click on any letter to hear its pronunciation.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <CardContent className="p-3 sm:p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-4">
                 {arabicAlphabet.map((letter, index) => (
                   <Card
                     key={`${letter.arabic}-${index}`}
@@ -358,16 +358,16 @@ export function QaidahSection() {
                     }}
                     data-testid={`letter-${letter.name.toLowerCase()}-${letter.transliteration.toLowerCase()}`}
                   >
-                    <CardContent className="p-4 text-center flex flex-col items-center justify-between gap-4 min-h-[180px]">
-                      <div className="text-5xl font-arabic leading-none mt-2">{letter.arabic}</div>
-                      <div className="flex flex-col gap-1 w-full">
-                        <div className="text-sm font-semibold break-words px-1">{letter.name}</div>
-                        <div className="text-xs text-muted-foreground break-words px-1">{letter.transliteration}</div>
+                    <CardContent className="p-3 sm:p-4 text-center flex flex-col items-center justify-between gap-2 sm:gap-4 min-h-[140px] sm:min-h-[180px]">
+                      <div className="text-4xl sm:text-5xl font-arabic leading-none mt-1 sm:mt-2">{letter.arabic}</div>
+                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
+                        <div className="text-xs sm:text-sm font-semibold break-words px-0.5 sm:px-1">{letter.name}</div>
+                        <div className="text-[10px] sm:text-xs text-muted-foreground break-words px-0.5 sm:px-1">{letter.transliteration}</div>
                       </div>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-7 w-7 flex-shrink-0"
+                        className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           playLetterAudio(letter.arabic);
@@ -375,7 +375,7 @@ export function QaidahSection() {
                         aria-label={`Hear pronunciation of ${letter.name}`}
                         data-testid={`button-speak-${letter.name.toLowerCase()}-${letter.transliteration.toLowerCase()}`}
                       >
-                        <Volume2 className="w-4 h-4" />
+                        <Volume2 className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </CardContent>
                   </Card>
@@ -383,17 +383,17 @@ export function QaidahSection() {
               </div>
 
               {selectedLetter && (
-                <Card className="mt-6 bg-primary/5">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-4">
-                      <span className="text-5xl font-arabic">{selectedLetter.arabic}</span>
+                <Card className="mt-4 sm:mt-6 bg-primary/5">
+                  <CardHeader className="pb-3 sm:pb-6">
+                    <CardTitle className="flex items-center gap-3 sm:gap-4">
+                      <span className="text-4xl sm:text-5xl font-arabic">{selectedLetter.arabic}</span>
                       <div>
-                        <div className="text-xl">{selectedLetter.name}</div>
-                        <div className="text-sm text-muted-foreground">{selectedLetter.transliteration}</div>
+                        <div className="text-lg sm:text-xl">{selectedLetter.name}</div>
+                        <div className="text-xs sm:text-sm text-muted-foreground">{selectedLetter.transliteration}</div>
                       </div>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6">
                     <div>
                       <p className="text-sm font-medium mb-2">Pronunciation:</p>
                       <p className="text-sm text-muted-foreground">{selectedLetter.pronunciation}</p>

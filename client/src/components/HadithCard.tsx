@@ -7,8 +7,8 @@ interface HadithCardProps {
 }
 
 export function HadithCard({ hadith }: HadithCardProps) {
-  const collectionName = hadith.book || hadith.collection || 'Unknown';
-  const hadithNum = hadith.hadithNumber || hadith.number || '1';
+  const collectionName = hadith.collection || 'Unknown';
+  const hadithNum = hadith.hadithNumber || '1';
   
   return (
     <Card className="p-6 hover-elevate" data-testid={`hadith-card-${hadithNum}`}>

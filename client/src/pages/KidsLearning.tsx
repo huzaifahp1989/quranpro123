@@ -185,29 +185,29 @@ export default function KidsLearning() {
       <audio ref={audioRef} preload="auto" />
       
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <BookOpen className="w-5 h-5 text-primary" />
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-semibold">Learn Quran for Kids</h1>
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl font-semibold truncate">Learn Quran for Kids</h1>
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Listen, Learn, and Repeat</p>
               </div>
             </div>
             <Link href="/">
-              <Button variant="outline" size="default" data-testid="button-back-home">
-                <BookOpen className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Back to Quran</span>
-                <span className="sm:hidden">Quran</span>
+              <Button variant="outline" size="sm" data-testid="button-back-home" className="gap-1 sm:gap-2 h-8 sm:h-9 shrink-0">
+                <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline text-xs sm:text-sm">Back to Quran</span>
+                <span className="sm:hidden text-xs">Quran</span>
               </Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-8">
         <Tabs value={mainTab} onValueChange={setMainTab} className="mb-8">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="quran" data-testid="tab-main-quran">
@@ -230,13 +230,13 @@ export default function KidsLearning() {
 
           {learningSections.map(section => (
             <TabsContent key={section.id} value={section.id}>
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{section.name}</span>
-                    <span className="font-arabic text-2xl">{section.arabicName}</span>
+              <Card className="mb-4 sm:mb-6">
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <span className="text-base sm:text-lg">{section.name}</span>
+                    <span className="font-arabic text-xl sm:text-2xl">{section.arabicName}</span>
                   </CardTitle>
-                  <CardDescription>{section.description}</CardDescription>
+                  <CardDescription className="text-xs sm:text-sm">{section.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -295,8 +295,8 @@ export default function KidsLearning() {
                   {currentVerse.ayah.surah?.englishName} • Verse {currentVerse.ayah.numberInSurah}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center font-arabic text-3xl sm:text-4xl leading-loose mb-6 px-2" dir="rtl">
+              <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
+                <div className="text-center font-arabic text-2xl sm:text-3xl lg:text-4xl leading-loose mb-4 sm:mb-6 px-2" dir="rtl">
                   {currentVerse.ayah.text}
                 </div>
                 
