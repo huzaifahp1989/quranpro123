@@ -147,6 +147,25 @@ export function AudioPlayer({
     onPlayingChange?.(false);
   };
 
+  // Manual navigation should pause playback
+  const handleManualNext = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlaying(false);
+    onPlayingChange?.(false);
+    onNext();
+  };
+
+  const handleManualPrevious = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setIsPlaying(false);
+    onPlayingChange?.(false);
+    onPrevious();
+  };
+
   const toggleRepeat = () => {
     setIsRepeating(!isRepeating);
   };
@@ -243,7 +262,7 @@ export function AudioPlayer({
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={onPrevious}
+                onClick={handleManualPrevious}
                 disabled={isLoading}
                 data-testid="button-previous-verse"
                 aria-label="Previous verse"
@@ -283,7 +302,7 @@ export function AudioPlayer({
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={onNext}
+                onClick={handleManualNext}
                 disabled={isLoading}
                 data-testid="button-next-verse"
                 aria-label="Next verse"
