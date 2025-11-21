@@ -27,6 +27,7 @@ export function VerseDisplay({ verse, isHighlighted, onVerseClick, onPlayClick }
           : "border-l-border"
       )}
       data-testid={`verse-${ayah.numberInSurah}`}
+      data-verse-number={ayah.numberInSurah}
       onClick={() => onVerseClick?.(ayah.number)}
     >
       <div className="flex items-start justify-between gap-4 mb-3">

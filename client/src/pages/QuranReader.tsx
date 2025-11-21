@@ -20,6 +20,7 @@ export default function QuranReader() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<{ surah: number; ayah: number } | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -112,6 +113,30 @@ export default function QuranReader() {
     }
   }, [shouldAutoPlay]);
 
+  // Handle pending navigation after verses load
+  useEffect(() => {
+    if (pendingNavigation && !isVersesLoading && verses && verses.length > 0) {
+      const { surah, ayah } = pendingNavigation;
+      
+      // Verify we're on the correct Surah
+      if (selectedSurah === surah) {
+        // Set the verse
+        setCurrentVerse(Math.min(ayah, verses.length));
+        
+        // Scroll to the verse
+        setTimeout(() => {
+          const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
+          if (verseElement) {
+            verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        
+        // Clear pending navigation
+        setPendingNavigation(null);
+      }
+    }
+  }, [pendingNavigation, isVersesLoading, verses, selectedSurah]);
+
   if (isSurahsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -144,8 +169,27 @@ export default function QuranReader() {
                 surahs={surahs}
                 currentSurah={selectedSurah}
                 onNavigate={(surah: number, ayah: number) => {
-                  setSelectedSurah(surah);
-                  setCurrentVerse(ayah);
+                  console.log(`🎯 Voice Navigation: Surah ${surah}, Verse ${ayah}`);
+                  
+                  // Reset state like handleSurahChange
+                  setSelectedVerseForTafseer(null);
+                  setIsAudioPlaying(false);
+                  setShouldAutoPlay(false);
+                  
+                  if (surah !== selectedSurah) {
+                    // Changing Surah - set pending navigation to apply after verses load
+                    setSelectedSurah(surah);
+                    setPendingNavigation({ surah, ayah });
+                  } else {
+                    // Same Surah - just set verse and scroll
+                    setCurrentVerse(ayah);
+                    setTimeout(() => {
+                      const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
+                      if (verseElement) {
+                        verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }
+                    }, 100);
+                  }
                 }}
               />
             </div>
