@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { VerseWithTranslations } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { QaidahSection } from "@/components/QaidahSection";
+import { EnhancedQaidah } from "@/components/EnhancedQaidah";
 import { DuasSection } from "@/components/DuasSection";
 import { KidsActivities } from "@/components/KidsActivities";
 
@@ -433,7 +433,7 @@ export default function KidsLearning() {
         </TabsContent>
 
           <TabsContent value="qaidah">
-            <QaidahSection />
+            <EnhancedQaidah />
           </TabsContent>
 
           <TabsContent value="duas">
