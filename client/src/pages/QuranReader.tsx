@@ -132,7 +132,7 @@ export default function QuranReader() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <TopNav title="Al-Quran Al-Kareem" subtitle="The Noble Quran" theme={theme} onThemeToggle={toggleTheme} pageIcon={<BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />} />
+      <TopNav title="Al-Quran Al-Kareem" subtitle="The Noble Quran" theme={theme} onThemeToggle={toggleTheme} pageIcon="quran" />
       
       {surahs && (
         <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">

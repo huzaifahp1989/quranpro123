@@ -20,7 +20,7 @@ interface TopNavProps {
   subtitle?: string;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
-  pageIcon?: React.ReactNode;
+  pageIcon?: 'quran' | 'kids' | 'hadith' | 'fiqh' | 'surahs' | 'stories';
 }
 
 export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopNavProps) {
@@ -38,6 +38,25 @@ export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopN
 
   const isActive = (href: string) => location === href || (href === "/" && location === "/");
 
+  const getPageIcon = () => {
+    switch (pageIcon) {
+      case 'quran':
+        return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'kids':
+        return <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'hadith':
+        return <Book className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'fiqh':
+        return <Book className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'surahs':
+        return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'stories':
+        return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      default:
+        return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+    }
+  };
+
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
@@ -46,7 +65,7 @@ export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopN
           <Link href="/">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer hover-elevate">
               <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
-                {pageIcon || <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
+                {getPageIcon()}
               </div>
               <div className="min-w-0 hidden sm:block">
                 <h1 className="text-base sm:text-lg font-semibold truncate">{title}</h1>

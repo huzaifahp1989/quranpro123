@@ -163,7 +163,7 @@ export default function AllSurahs() {
 
   return (
     <div className="min-h-screen bg-background">
-      <TopNav title="All Surahs" subtitle="114 Chapters of the Quran" theme={theme} onThemeToggle={toggleTheme} pageIcon={<BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />} />
+      <TopNav title="All Surahs" subtitle="114 Chapters of the Quran" theme={theme} onThemeToggle={toggleTheme} pageIcon="surahs" />
       
       <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
