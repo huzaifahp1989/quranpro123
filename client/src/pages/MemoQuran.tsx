@@ -100,29 +100,31 @@ export default function MemoQuran() {
     if (!audioRef.current) return;
     const audio = audioRef.current;
     const handleEnded = () => {
-      const nextRepeat = currentVerseIndex;
       if (repeatCount > 1) {
         setRepeatCount(prev => prev - 1);
         setTimeout(() => playCurrentVerse(), 500);
       } else {
-        setRepeatCount(repeatCount);
-        if (repeatAfterReciter) {
-          setCurrentVerseIndex(prev => {
-            const newIndex = prev + 1;
-            if (newIndex >= verseRange.length) {
-              setIsPlaying(false);
-              return 0;
-            }
-            return newIndex;
-          });
-        } else {
-          setCurrentVerseIndex(prev => prev + 1);
-        }
+        // Reset repeat count for next verse
+        setRepeatCount(parseInt(localStorage.getItem('lastRepeatCount') || '1'));
+        
+        // Move to next verse
+        setCurrentVerseIndex(prev => {
+          const newIndex = prev + 1;
+          if (newIndex >= verseRange.length) {
+            setIsPlaying(false);
+            return prev; // Stay on last verse
+          }
+          // Auto-play next verse after a short delay
+          setTimeout(() => {
+            setCurrentVerseIndex(newIndex);
+          }, 300);
+          return newIndex;
+        });
       }
     };
     audio.addEventListener('ended', handleEnded);
     return () => audio.removeEventListener('ended', handleEnded);
-  }, [currentVerseIndex, repeatCount, repeatAfterReciter, verseRange.length]);
+  }, [currentVerseIndex, repeatCount, repeatAfterReciter, verseRange.length, playCurrentVerse]);
 
   const handlePlayClick = () => {
     if (isPlaying) {
@@ -130,9 +132,26 @@ export default function MemoQuran() {
       setIsPlaying(false);
     } else {
       setCurrentVerseIndex(0);
-      setRepeatCount(repeatCount);
+      // Store repeat count for auto-progression
+      localStorage.setItem('lastRepeatCount', repeatCount.toString());
       playCurrentVerse();
     }
+  };
+
+  const handleVerseClick = (verseIndex: number) => {
+    setCurrentVerseIndex(verseIndex);
+    localStorage.setItem('lastRepeatCount', repeatCount.toString());
+    // Play the clicked verse immediately
+    setTimeout(() => {
+      const verse = verseRange[verseIndex];
+      const audioUrl = verse?.ayah?.audio;
+      if (audioUrl && audioRef.current) {
+        audioRef.current.src = audioUrl;
+        audioRef.current.playbackRate = playbackSpeed;
+        audioRef.current.play().catch(err => console.error('Play error:', err));
+        setIsPlaying(true);
+      }
+    }, 100);
   };
 
   const handleStopClick = () => {
@@ -366,26 +385,62 @@ export default function MemoQuran() {
             )}
 
             {verseRange.length > 0 && !isVersesLoading && (
-              <Card>
-                <CardHeader className="pb-2 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-sm">Surah {currentSurah?.name} • Verse {currentVerseIndex + startVerse}/{endVerse}</CardTitle>
-                      <CardDescription className="text-xs mt-1">{verseRange[currentVerseIndex + 1] ? `Verse ${currentVerseIndex + 1}/${verseRange.length}` : 'Last verse'}</CardDescription>
+              <>
+                <Card>
+                  <CardHeader className="pb-2 border-b">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-sm">Surah {currentSurah?.name} • Verse {currentVerseIndex + startVerse}/{endVerse}</CardTitle>
+                        <CardDescription className="text-xs mt-1">{verseRange[currentVerseIndex + 1] ? `Verse ${currentVerseIndex + 1}/${verseRange.length}` : 'Last verse'}</CardDescription>
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-4">
-                  {verseRange[currentVerseIndex] && (
-                    <div className="text-center space-y-3 bg-muted/50 p-4 rounded-md">
-                      <p className="font-arabic text-3xl leading-loose">{verseRange[currentVerseIndex].ayah?.text}</p>
-                      <p className="text-xs text-muted-foreground font-semibold">Ayah {currentVerseIndex + startVerse}</p>
-                      {verseRange[currentVerseIndex].urduTranslation && <p className="text-xs text-foreground/80 mt-2">{verseRange[currentVerseIndex].urduTranslation.text}</p>}
-                      {verseRange[currentVerseIndex].englishTranslation && <p className="text-xs text-foreground/70 mt-2">{verseRange[currentVerseIndex].englishTranslation.text}</p>}
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-4">
+                    {verseRange[currentVerseIndex] && (
+                      <div className="text-center space-y-3 bg-muted/50 p-4 rounded-md">
+                        <p className="font-arabic text-3xl leading-loose">{verseRange[currentVerseIndex].ayah?.text}</p>
+                        <p className="text-xs text-muted-foreground font-semibold">Ayah {currentVerseIndex + startVerse}</p>
+                        {verseRange[currentVerseIndex].urduTranslation && <p className="text-xs text-foreground/80 mt-2">{verseRange[currentVerseIndex].urduTranslation.text}</p>}
+                        {verseRange[currentVerseIndex].englishTranslation && <p className="text-xs text-foreground/70 mt-2">{verseRange[currentVerseIndex].englishTranslation.text}</p>}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* All Verses List */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">All Verses ({verseRange.length})</CardTitle>
+                    <CardDescription className="text-xs">Click any verse to play from there</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {verseRange.map((verse, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleVerseClick(index)}
+                          data-testid={`btn-verse-${index}`}
+                          className={`w-full text-left p-3 rounded-md border-2 transition-all ${
+                            currentVerseIndex === index
+                              ? 'border-primary bg-primary/10'
+                              : 'border-muted hover-elevate hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-arabic text-lg leading-relaxed text-left">{verse.ayah?.text}</p>
+                              {verse.englishTranslation && <p className="text-xs text-muted-foreground mt-1">{verse.englishTranslation.text}</p>}
+                            </div>
+                            <span className="text-xs font-semibold shrink-0 whitespace-nowrap px-2 py-1 bg-muted rounded">
+                              {index + startVerse}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </TabsContent>
 
