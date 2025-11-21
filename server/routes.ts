@@ -24,6 +24,60 @@ function setCache(key: string, data: any) {
   cache.set(key, { data, timestamp: Date.now() });
 }
 
+// Pre-load entire Quran into cache for instant voice search
+async function preloadQuranData() {
+  console.log("🕋 Pre-loading Quran data for voice search...");
+  const startTime = Date.now();
+  let successCount = 0;
+  
+  try {
+    for (let surahNumber = 1; surahNumber <= 114; surahNumber++) {
+      try {
+        const cacheKey = `surah-${surahNumber}-text`;
+        
+        // Skip if already cached
+        if (getFromCache(cacheKey)) {
+          successCount++;
+          continue;
+        }
+
+        // Fetch just Arabic text (fastest endpoint)
+        const response = await axios.get(
+          `${ALQURAN_CLOUD_API}/surah/${surahNumber}/editions/quran-uthmani`,
+          { timeout: 8000 }
+        );
+        
+        if (response.data.code === 200 && response.data.data && response.data.data[0]) {
+          const surahData = response.data.data[0];
+          setCache(cacheKey, {
+            number: surahData.number,
+            name: surahData.name,
+            englishName: surahData.englishName,
+            ayahs: surahData.ayahs.map((a: any) => ({
+              number: a.number,
+              numberInSurah: a.numberInSurah,
+              text: a.text
+            }))
+          });
+          successCount++;
+        }
+        
+        // Small delay to avoid overwhelming API
+        if (surahNumber % 10 === 0) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      } catch (err) {
+        console.error(`Failed to load Surah ${surahNumber}:`, err);
+      }
+    }
+    
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✅ Pre-loaded ${successCount}/114 Surahs in ${duration}s`);
+  } catch (error) {
+    console.error("Error during Quran pre-loading:", error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // Get all Surahs (chapters)
@@ -472,5 +526,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Pre-load Quran data in background for instant voice search
+  preloadQuranData().catch(err => {
+    console.error("Failed to pre-load Quran data:", err);
+  });
+  
   return httpServer;
 }
