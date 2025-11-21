@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, X, Volume2, CheckCircle } from "lucide-react";
 import { useVoiceRecognition } from "@/hooks/use-voice-recognition";
-import { VerseWithTranslations } from "@shared/schema";
+import { VerseWithTranslations, Surah } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
@@ -13,13 +13,9 @@ import {
 
 interface VoiceRecognitionButtonProps {
   verses: VerseWithTranslations[] | undefined;
+  surahs: Surah[] | undefined;
   currentSurah: number;
   onNavigate: (surah: number, ayah: number) => void;
-}
-
-// Remove all diacritics from Arabic text
-function normalizeArabic(text: string): string {
-  return text.replace(/[\u064B-\u0652\u0640\u061C\u200E\u200F]/g, '').trim();
 }
 
 // Extract numbers from text
@@ -35,82 +31,29 @@ function extractNumbers(text: string): number[] {
   });
 }
 
-// Check if transcribed text matches Quranic Arabic
-function findArabicMatch(
-  transcript: string,
-  verses: VerseWithTranslations[]
-): { verse: VerseWithTranslations | null; score: number } {
-  const normalizedTranscript = normalizeArabic(transcript);
-  
-  if (!normalizedTranscript || normalizedTranscript.length < 3) {
-    return { verse: null, score: 0 };
-  }
+// Remove all diacritics from Arabic text
+function normalizeArabic(text: string): string {
+  return text.replace(/[\u064B-\u0652\u0640\u061C\u200E\u200F]/g, '').trim();
+}
 
-  let bestMatch: VerseWithTranslations | null = null;
-  let bestScore = 0;
-
-  for (const verse of verses) {
-    const normalizedVerse = normalizeArabic(verse.ayah.text);
-    let score = 0;
-
-    if (normalizedVerse.includes(normalizedTranscript)) {
-      score = 1.0;
-    } else if (normalizedVerse.startsWith(normalizedTranscript)) {
-      score = 0.95;
-    } else if (normalizedTranscript.startsWith(normalizedVerse.substring(0, Math.max(10, normalizedVerse.length * 0.7)))) {
-      score = 0.85;
-    } else {
-      const transcriptWords = normalizedTranscript.split(/\s+/);
-      const verseWords = normalizedVerse.split(/\s+/);
-      
-      let consecutiveMatches = 0;
-      let verseIdx = 0;
-      
-      for (const transcriptWord of transcriptWords) {
-        if (transcriptWord.length < 2) continue;
-        
-        let foundMatch = false;
-        for (let i = verseIdx; i < verseWords.length; i++) {
-          if (verseWords[i] === transcriptWord || 
-              (verseWords[i].length > 3 && transcriptWord.length > 3 && verseWords[i].startsWith(transcriptWord.substring(0, 3)))) {
-            consecutiveMatches++;
-            verseIdx = i + 1;
-            foundMatch = true;
-            break;
-          }
-        }
-        
-        if (!foundMatch) break;
-      }
-      
-      const validWords = transcriptWords.filter(w => w.length >= 2).length;
-      if (validWords > 0 && consecutiveMatches > 0) {
-        score = (consecutiveMatches / validWords) * 0.75;
-      }
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = verse;
-    }
-  }
-
-  return { verse: bestMatch, score: bestScore };
+// Find Surah by number or name
+function findSurahByNumber(number: number, surahs: Surah[] | undefined): Surah | undefined {
+  if (!surahs) return undefined;
+  return surahs.find(s => s.number === number);
 }
 
 export function VoiceRecognitionButton({
   verses,
+  surahs,
   currentSurah,
   onNavigate,
 }: VoiceRecognitionButtonProps) {
   const { isListening, transcript, error, startListening, stopListening } =
     useVoiceRecognition();
   const [isOpen, setIsOpen] = useState(false);
-  const [matchedVerse, setMatchedVerse] = useState<VerseWithTranslations | null>(null);
-  const [matchScore, setMatchScore] = useState(0);
-  const [suggestionType, setSuggestionType] = useState<"verse" | "number" | null>(null);
-  const [suggestedAyah, setSuggestedAyah] = useState<number | null>(null);
   const [navigating, setNavigating] = useState(false);
+  const [targetSurah, setTargetSurah] = useState<number | null>(null);
+  const [targetAyah, setTargetAyah] = useState<number>(1);
 
   // Auto-start listening when dialog opens
   useEffect(() => {
@@ -119,78 +62,52 @@ export function VoiceRecognitionButton({
     }
   }, [isOpen, isListening, startListening]);
 
-  // Auto-navigate when a match is found
+  // Auto-navigate when target is set
   useEffect(() => {
-    if (matchedVerse && !navigating && !isListening) {
-      // Small delay to ensure UI updates
-      const timer = setTimeout(() => {
-        setNavigating(true);
-        onNavigate(currentSurah, matchedVerse.ayah.numberInSurah);
-        
-        // Close dialog after navigation
-        setTimeout(() => {
-          setIsOpen(false);
-          resetState();
-          setNavigating(false);
-        }, 500);
-      }, 300);
+    if (targetSurah && !navigating && !isListening) {
+      setNavigating(true);
+      onNavigate(targetSurah, targetAyah);
       
-      return () => clearTimeout(timer);
+      // Close dialog after navigation
+      setTimeout(() => {
+        setIsOpen(false);
+        setNavigating(false);
+        setTargetSurah(null);
+        setTargetAyah(1);
+      }, 800);
     }
-  }, [matchedVerse, isListening, navigating, currentSurah, onNavigate]);
+  }, [targetSurah, isListening, navigating, targetAyah, onNavigate]);
 
-  // Search for matching ayah when transcript changes
+  // Process transcript when received
   useEffect(() => {
-    if (transcript && !isListening && verses && verses.length > 0) {
-      // Try to extract verse numbers first
+    if (transcript && !isListening) {
       const numbers = extractNumbers(transcript);
       
       if (numbers.length > 0) {
-        // User said a number - try to navigate to that verse
-        const ayahNumber = numbers[0];
-        const verseExists = verses.find(v => v.ayah.numberInSurah === ayahNumber);
+        const firstNum = numbers[0];
+        const secondNum = numbers.length > 1 ? numbers[1] : 1;
         
-        if (verseExists && ayahNumber <= verses.length) {
-          setMatchedVerse(verseExists);
-          setMatchScore(1.0);
-          setSuggestionType("number");
-          setSuggestedAyah(ayahNumber);
+        // Check if first number is a valid Surah (1-114)
+        if (firstNum >= 1 && firstNum <= 114) {
+          setTargetSurah(firstNum);
+          setTargetAyah(Math.max(1, secondNum));
           return;
         }
       }
-
-      // Otherwise, try Arabic text matching
-      const { verse, score } = findArabicMatch(transcript, verses);
-
-      if (score > 0.3) {
-        setMatchedVerse(verse);
-        setMatchScore(score);
-        setSuggestionType("verse");
-        setSuggestedAyah(verse?.ayah.numberInSurah || null);
-      } else {
-        setMatchedVerse(null);
-        setMatchScore(0);
-        setSuggestionType(null);
-        setSuggestedAyah(null);
-      }
     }
-  }, [transcript, isListening, verses]);
-
-  const resetState = () => {
-    setMatchedVerse(null);
-    setMatchScore(0);
-    setSuggestionType(null);
-    setSuggestedAyah(null);
-    setNavigating(false);
-  };
+  }, [transcript, isListening]);
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
       stopListening();
-      resetState();
+      setTargetSurah(null);
+      setTargetAyah(1);
+      setNavigating(false);
     }
   };
+
+  const surahName = targetSurah && surahs ? findSurahByNumber(targetSurah, surahs)?.englishName : "";
 
   return (
     <>
@@ -209,7 +126,7 @@ export function VoiceRecognitionButton({
           <DialogHeader>
             <DialogTitle>Voice Search</DialogTitle>
             <DialogDescription>
-              Say a verse number or recite Arabic text to find it
+              Say a Surah number (1-114) and optionally a verse number
             </DialogDescription>
           </DialogHeader>
 
@@ -217,10 +134,10 @@ export function VoiceRecognitionButton({
             {/* Listening Indicator */}
             <div
               className={`p-6 rounded-lg border-2 transition-all ${
-                isListening
-                  ? "border-primary bg-primary/5"
-                  : navigating
+                navigating
                   ? "border-green-500 bg-green-500/5"
+                  : isListening
+                  ? "border-primary bg-primary/5"
                   : "border-border bg-background"
               }`}
             >
@@ -233,15 +150,19 @@ export function VoiceRecognitionButton({
                   />
                 )}
                 <span className="font-medium">
-                  {navigating ? "Going to verse..." : isListening ? "Listening..." : "Ready"}
+                  {navigating 
+                    ? `Going to Surah ${targetSurah}${surahName ? ` (${surahName})` : ""}...`
+                    : isListening 
+                    ? "Listening..." 
+                    : "Ready"}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
                 {navigating
-                  ? `Navigating to verse ${suggestedAyah}...`
+                  ? "Navigating to your selection..."
                   : isListening
-                  ? "Say a verse number (e.g., 'verse 5') or recite Arabic text"
-                  : "Click microphone to start listening"}
+                  ? "Say Surah number (e.g., 'Surah 2' or just '2')"
+                  : "Click microphone to start"}
               </p>
             </div>
 
@@ -249,7 +170,7 @@ export function VoiceRecognitionButton({
             {transcript && (
               <div className="p-4 rounded-lg bg-secondary/50 border border-border">
                 <p className="text-xs text-muted-foreground mb-2">You said:</p>
-                <p className="text-sm font-medium line-clamp-4">{transcript}</p>
+                <p className="text-sm font-medium">{transcript}</p>
               </div>
             )}
 
@@ -260,33 +181,21 @@ export function VoiceRecognitionButton({
               </div>
             )}
 
-            {/* Match Result */}
-            {matchedVerse && (
+            {/* Result Display */}
+            {targetSurah && (
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
-                <p className="text-xs text-muted-foreground mb-2">
-                  {suggestionType === "number" 
-                    ? `Verse ${suggestedAyah} Found:`
-                    : `Match Found (${Math.round(matchScore * 100)}% match):`}
-                </p>
-                <p className="text-sm font-medium dir-rtl mb-3 line-clamp-4">
-                  {matchedVerse.ayah.text}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Verse {matchedVerse.ayah.numberInSurah}
+                <p className="text-xs text-muted-foreground mb-2">Found:</p>
+                <p className="text-sm font-medium">
+                  Surah {targetSurah} {surahName && `(${surahName})`} - Verse {targetAyah}
                 </p>
               </div>
             )}
 
-            {!isListening && !matchedVerse && transcript && (
+            {!isListening && !targetSurah && transcript && (
               <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                <p className="text-sm text-amber-700 dark:text-amber-400 mb-2">
-                  No match found
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  Invalid Surah number. Please say a number between 1-114.
                 </p>
-                <ul className="text-xs text-amber-700 dark:text-amber-400 list-disc list-inside space-y-1">
-                  <li>Try saying the verse number (e.g., "verse 5")</li>
-                  <li>Or recite the Arabic verse clearly</li>
-                  <li>Make sure you're in the correct Surah</li>
-                </ul>
               </div>
             )}
 
@@ -303,7 +212,7 @@ export function VoiceRecognitionButton({
                   Stop
                 </Button>
               )}
-              {!isListening && !matchedVerse && transcript && (
+              {!isListening && !targetSurah && transcript && (
                 <Button
                   onClick={() => startListening()}
                   className="flex-1"
