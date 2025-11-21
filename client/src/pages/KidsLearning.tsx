@@ -10,6 +10,8 @@ import { Slider } from "@/components/ui/slider";
 import { VerseWithTranslations } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QaidahSection } from "@/components/QaidahSection";
+import { DuasSection } from "@/components/DuasSection";
+import { KidsActivities } from "@/components/KidsActivities";
 
 interface LearningSection {
   id: string;
@@ -220,12 +222,18 @@ export default function KidsLearning() {
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-8">
         <Tabs value={mainTab} onValueChange={setMainTab} className="mb-8">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="quran" data-testid="tab-main-quran">
-              Quran Recitation
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6">
+            <TabsTrigger value="quran" data-testid="tab-main-quran" className="text-xs sm:text-sm">
+              Recitation
             </TabsTrigger>
-            <TabsTrigger value="qaidah" data-testid="tab-main-qaidah">
-              Qaidah & Arabic
+            <TabsTrigger value="qaidah" data-testid="tab-main-qaidah" className="text-xs sm:text-sm">
+              Alphabet
+            </TabsTrigger>
+            <TabsTrigger value="duas" data-testid="tab-main-duas" className="text-xs sm:text-sm">
+              Duas
+            </TabsTrigger>
+            <TabsTrigger value="activities" data-testid="tab-main-activities" className="text-xs sm:text-sm">
+              Activities
             </TabsTrigger>
           </TabsList>
 
@@ -426,6 +434,14 @@ export default function KidsLearning() {
 
           <TabsContent value="qaidah">
             <QaidahSection />
+          </TabsContent>
+
+          <TabsContent value="duas">
+            <DuasSection />
+          </TabsContent>
+
+          <TabsContent value="activities">
+            <KidsActivities />
           </TabsContent>
         </Tabs>
       </main>
