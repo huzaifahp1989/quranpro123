@@ -34,13 +34,13 @@ function extractNumbers(text: string): number[] {
 
 function normalizeArabic(text: string): string {
   let normalized = text
-    .replace(/[\u064B-\u0652]/g, '') // Fatha, Damma, Sukun, etc
-    .replace(/[\u0640\u061C\u200E\u200F]/g, '') // Special Quran chars
-    .replace(/أ/g, 'ا') // Alef with hamza
-    .replace(/إ/g, 'ا') // Alef with hamza below
-    .replace(/آ/g, 'ا') // Alef with madda
-    .replace(/ة/g, 'ه') // Teh marbuta
-    .replace(/ى/g, 'ي') // Alef maksura
+    .replace(/[\u064B-\u0652]/g, '')
+    .replace(/[\u0640\u061C\u200E\u200F]/g, '')
+    .replace(/أ/g, 'ا')
+    .replace(/إ/g, 'ا')
+    .replace(/آ/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
     .replace(/\s+/g, ' ')
     .trim();
   
@@ -106,22 +106,18 @@ function findArabicVerseMatch(
     const normalizedVerse = normalizeArabic(verse.ayah.text);
     let score = 0;
 
-    // Check 1: Exact substring match
     if (normalizedVerse.includes(normalizedTranscript)) {
       score = 1.0;
       console.log(`✅ EXACT MATCH - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
-    // Check 2: Verse starts with transcript
     else if (normalizedVerse.startsWith(normalizedTranscript)) {
       score = 0.95;
       console.log(`✅ STARTS WITH - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
-    // Check 3: Transcript is within first 70% of verse
     else if (normalizedVerse.substring(0, Math.ceil(normalizedVerse.length * 0.7)).includes(normalizedTranscript)) {
       score = 0.90;
       console.log(`✅ IN FIRST PART - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
-    // Check 4: Word-by-word matching
     else {
       const transcriptWords = normalizedTranscript
         .split(/\s+/)
@@ -140,16 +136,13 @@ function findArabicVerseMatch(
         const tWord = transcriptWords[i];
         let bestWordScore = 0;
 
-        // Look for this word in the verse
         for (let j = 0; j < verseWords.length; j++) {
           const vWord = verseWords[j];
           
-          // Exact word match
           if (vWord === tWord) {
             bestWordScore = 1.0;
             break;
           }
-          // Fuzzy match
           else if (tWord.length > 1 && vWord.length > 1) {
             const similarity = stringSimilarity(tWord, vWord);
             if (similarity > bestWordScore) {
@@ -197,9 +190,6 @@ export function VoiceRecognitionButton({
   const { isListening, transcript, error, startListening, stopListening } =
     useVoiceRecognition();
   const [isOpen, setIsOpen] = useState(false);
-  const [navigating, setNavigating] = useState(false);
-  const [targetSurah, setTargetSurah] = useState<number | null>(null);
-  const [targetAyah, setTargetAyah] = useState<number>(1);
   const [matchedVerseText, setMatchedVerseText] = useState<string>("");
   const [matchScore, setMatchScore] = useState(0);
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState("");
@@ -213,22 +203,7 @@ export function VoiceRecognitionButton({
     }
   }, [isOpen, isListening, startListening, activeTab]);
 
-  useEffect(() => {
-    if (targetSurah && !navigating && !isListening) {
-      setNavigating(true);
-      onNavigate(targetSurah, targetAyah);
-      
-      setTimeout(() => {
-        setIsOpen(false);
-        setNavigating(false);
-        setTargetSurah(null);
-        setTargetAyah(1);
-        setMatchedVerseText("");
-        setMatchScore(0);
-      }, 800);
-    }
-  }, [targetSurah, isListening, navigating, targetAyah, onNavigate]);
-
+  // Process transcript when received
   useEffect(() => {
     if (!transcript || transcript === lastProcessedTranscript || isListening) {
       return;
@@ -238,6 +213,7 @@ export function VoiceRecognitionButton({
     console.log("Raw transcript:", transcript);
     setLastProcessedTranscript(transcript);
 
+    // Try extracting numbers first (Surah navigation)
     const numbers = extractNumbers(transcript);
     
     if (numbers.length > 0) {
@@ -246,35 +222,54 @@ export function VoiceRecognitionButton({
       if (firstNum >= 1 && firstNum <= 114) {
         console.log(`✅ Detected Surah number: ${firstNum}`);
         const secondNum = numbers.length > 1 ? numbers[1] : 1;
-        setTargetSurah(firstNum);
-        setTargetAyah(Math.max(1, secondNum));
         setMatchedVerseText(`Surah ${firstNum}${secondNum > 1 ? `, Verse ${secondNum}` : ""}`);
         setMatchScore(1.0);
+        
+        // Directly navigate without state delay
+        console.log(`🚀 NAVIGATING TO: Surah ${firstNum}, Verse ${secondNum}`);
+        onNavigate(firstNum, Math.max(1, secondNum));
+        
+        // Close dialog after a delay
+        setTimeout(() => {
+          setIsOpen(false);
+          setMatchedVerseText("");
+          setMatchScore(0);
+          setLastProcessedTranscript("");
+        }, 500);
         return;
       }
     }
 
+    // Try matching Arabic verse text
     if (verses && verses.length > 0) {
       console.log(`🔍 Searching among ${verses.length} verses...`);
       const match = findArabicVerseMatch(transcript, verses);
       
       if (match && match.score > 0.5) {
         console.log(`✅ FOUND MATCH - Verse ${match.verse.ayah.numberInSurah} with score ${match.score.toFixed(2)}`);
-        setTargetSurah(currentSurah);
-        setTargetAyah(match.verse.ayah.numberInSurah);
         setMatchedVerseText(match.verse.ayah.text);
         setMatchScore(match.score);
+        
+        // Directly navigate without state delay
+        console.log(`🚀 NAVIGATING TO: Surah ${currentSurah}, Verse ${match.verse.ayah.numberInSurah}`);
+        onNavigate(currentSurah, match.verse.ayah.numberInSurah);
+        
+        // Close dialog after a delay
+        setTimeout(() => {
+          setIsOpen(false);
+          setMatchedVerseText("");
+          setMatchScore(0);
+          setLastProcessedTranscript("");
+        }, 500);
         return;
       } else {
         console.log("❌ No match found");
       }
     }
 
-    setTargetSurah(null);
-    setTargetAyah(1);
     setMatchedVerseText("");
     setMatchScore(0);
-  }, [transcript, isListening, verses, currentSurah, lastProcessedTranscript]);
+  }, [transcript, isListening, verses, currentSurah, lastProcessedTranscript, onNavigate]);
 
   const handleTextSearch = (value: string) => {
     setTextSearchInput(value);
@@ -293,28 +288,34 @@ export function VoiceRecognitionButton({
   };
 
   const handleSelectVerse = (verse: VerseWithTranslations) => {
-    setTargetSurah(currentSurah);
-    setTargetAyah(verse.ayah.numberInSurah);
     setMatchedVerseText(verse.ayah.text);
     setMatchScore(1.0);
+    
+    console.log(`🚀 NAVIGATING TO: Surah ${currentSurah}, Verse ${verse.ayah.numberInSurah}`);
+    onNavigate(currentSurah, verse.ayah.numberInSurah);
+    
+    setTimeout(() => {
+      setIsOpen(false);
+      setMatchedVerseText("");
+      setMatchScore(0);
+      setTextSearchInput("");
+      setTextSearchResults([]);
+    }, 500);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
       stopListening();
-      setTargetSurah(null);
-      setTargetAyah(1);
       setMatchedVerseText("");
       setMatchScore(0);
       setLastProcessedTranscript("");
       setTextSearchInput("");
       setTextSearchResults([]);
-      setNavigating(false);
     }
   };
 
-  const surahName = targetSurah && surahs ? findSurahByNumber(targetSurah, surahs)?.englishName : "";
+  const surahName = surahs?.find(s => s.number === currentSurah)?.englishName || "";
 
   return (
     <>
@@ -346,25 +347,17 @@ export function VoiceRecognitionButton({
             <TabsContent value="voice" className="space-y-4">
               <div
                 className={`p-6 rounded-lg border-2 transition-all ${
-                  navigating
-                    ? "border-green-500 bg-green-500/5"
-                    : isListening
+                  isListening
                     ? "border-primary bg-primary/5"
                     : "border-border bg-background"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  {navigating ? (
-                    <CheckCircle className="w-5 h-5 text-green-500" />
-                  ) : (
-                    <Volume2
-                      className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
-                    />
-                  )}
+                  <Volume2
+                    className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
+                  />
                   <span className="font-medium">
-                    {navigating 
-                      ? "Navigating..."
-                      : isListening 
+                    {isListening 
                       ? "Listening..." 
                       : "Ready"}
                   </span>
@@ -384,14 +377,11 @@ export function VoiceRecognitionButton({
                 </div>
               )}
 
-              {matchedVerseText && targetSurah && (
+              {matchedVerseText && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <p className="text-xs text-muted-foreground mb-2">Found ({Math.round(matchScore * 100)}%):</p>
                   <p className="text-sm font-medium dir-rtl mb-3 line-clamp-3">
                     {matchedVerseText}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Surah {targetSurah}${surahName ? ` (${surahName})` : ""}, Verse {targetAyah}
                   </p>
                 </div>
               )}
@@ -402,7 +392,6 @@ export function VoiceRecognitionButton({
                     variant="destructive"
                     onClick={stopListening}
                     className="flex-1 gap-2"
-                    data-testid="button-stop-listening"
                   >
                     <X className="w-4 h-4" />
                     Stop
@@ -466,24 +455,6 @@ export function VoiceRecognitionButton({
                     </p>
                   </div>
                 ) : null}
-
-                {matchedVerseText && targetSurah && (
-                  <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
-                    <p className="text-xs text-muted-foreground mb-2">Selected:</p>
-                    <p className="text-sm font-medium dir-rtl mb-2 line-clamp-2">
-                      {matchedVerseText}
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Verse {targetAyah}
-                    </p>
-                    <Button
-                      onClick={() => handleDialogOpenChange(false)}
-                      className="w-full"
-                    >
-                      Go to Verse
-                    </Button>
-                  </div>
-                )}
               </div>
             </TabsContent>
           </Tabs>
