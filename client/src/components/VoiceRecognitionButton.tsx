@@ -18,7 +18,7 @@ interface VoiceRecognitionButtonProps {
   onNavigate: (surah: number, ayah: number) => void;
 }
 
-// Extract numbers from text
+// Extract numbers from text (both English and Arabic numerals)
 function extractNumbers(text: string): number[] {
   const numberMatches = text.match(/[\d٠-٩۰-۹]+/g) || [];
   
@@ -31,45 +31,72 @@ function extractNumbers(text: string): number[] {
   });
 }
 
-// Remove all diacritics and normalize Arabic text
+// Comprehensive Arabic normalization
 function normalizeArabic(text: string): string {
   return text
-    .replace(/[\u064B-\u0652\u0640\u061C\u200E\u200F]/g, '') // Remove diacritics
-    .replace(/\s+/g, ' ') // Normalize spaces
+    // Remove all diacritical marks
+    .replace(/[\u064B-\u0652]/g, '')
+    // Remove Quranic special characters
+    .replace(/[\u0640\u061C\u200E\u200F]/g, '')
+    // Normalize hamza variations
+    .replace(/أ/g, 'ا')
+    .replace(/إ/g, 'ا')
+    .replace(/آ/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    // Normalize spaces
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
-// Levenshtein distance for fuzzy matching
+// Calculate similarity score between two strings (0-1)
+function stringSimilarity(str1: string, str2: string): number {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  
+  if (longer.length === 0) return 1.0;
+  
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+// Levenshtein distance algorithm
 function levenshteinDistance(str1: string, str2: string): number {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(0));
+  const matrix: number[][] = [];
 
-  for (let i = 0; i <= len1; i++) matrix[0][i] = i;
-  for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
 
-  for (let j = 1; j <= len2; j++) {
-    for (let i = 1; i <= len1; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + indicator
-      );
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
     }
   }
 
-  return matrix[len2][len1];
+  return matrix[str2.length][str1.length];
 }
 
-// Find matching verse by Arabic text
+// Find matching verse by Arabic text with multiple strategies
 function findArabicVerseMatch(
   transcript: string,
   verses: VerseWithTranslations[]
 ): { verse: VerseWithTranslations; score: number } | null {
   const normalizedTranscript = normalizeArabic(transcript);
   
-  if (normalizedTranscript.length < 4) return null;
+  if (normalizedTranscript.length < 3) return null;
 
   let bestMatch: { verse: VerseWithTranslations; score: number } | null = null;
 
@@ -77,64 +104,78 @@ function findArabicVerseMatch(
     const normalizedVerse = normalizeArabic(verse.ayah.text);
     let score = 0;
 
-    // Exact match (best)
-    if (normalizedVerse === normalizedTranscript) {
-      score = 1.0;
+    // Strategy 1: Exact substring match (strongest signal)
+    if (normalizedVerse.includes(normalizedTranscript)) {
+      const ratio = normalizedTranscript.length / normalizedVerse.length;
+      score = 0.95 + Math.min(ratio * 0.05, 0.05); // 0.95-1.0 for substring matches
     }
-    // Verse contains transcript
-    else if (normalizedVerse.includes(normalizedTranscript)) {
-      score = 0.95;
-    }
-    // Transcript contains beginning of verse
+    // Strategy 2: Verse starts with transcript
     else if (normalizedVerse.startsWith(normalizedTranscript)) {
-      score = 0.9;
+      score = 0.90;
     }
-    // Check word-by-word match
+    // Strategy 3: Transcript starts with beginning of verse
+    else if (normalizedTranscript.startsWith(normalizedVerse.substring(0, Math.min(normalizedVerse.length, normalizedTranscript.length)))) {
+      score = 0.85;
+    }
+    // Strategy 4: Word-by-word matching
     else {
-      const transcriptWords = normalizedTranscript.split(/\s+/).filter(w => w.length > 1);
-      const verseWords = normalizedVerse.split(/\s+/).filter(w => w.length > 1);
+      const transcriptWords = normalizedTranscript
+        .split(/\s+/)
+        .filter(w => w.length > 1);
       
-      if (transcriptWords.length === 0) return null;
+      const verseWords = normalizedVerse
+        .split(/\s+/)
+        .filter(w => w.length > 1);
+      
+      if (transcriptWords.length === 0) continue;
 
-      let matchedWords = 0;
+      let consecutiveMatches = 0;
+      let totalMatches = 0;
       let verseIdx = 0;
 
       for (const tWord of transcriptWords) {
-        let found = false;
-        for (let i = verseIdx; i < verseWords.length && i < verseIdx + 3; i++) {
+        let bestWordMatch = 0;
+        let bestVIdx = -1;
+
+        // Search for word match in nearby verse words
+        for (let i = Math.max(0, verseIdx - 2); i < Math.min(verseWords.length, verseIdx + 4); i++) {
           const vWord = verseWords[i];
           
-          // Exact word match
+          // Exact match
           if (vWord === tWord) {
-            matchedWords++;
-            verseIdx = i + 1;
-            found = true;
+            bestWordMatch = 1.0;
+            bestVIdx = i;
             break;
           }
-          // Fuzzy match if similar
+          // Fuzzy match for longer words
           else if (tWord.length > 2 && vWord.length > 2) {
-            const distance = levenshteinDistance(tWord, vWord);
-            const similarity = 1 - distance / Math.max(tWord.length, vWord.length);
-            if (similarity > 0.75) {
-              matchedWords += similarity;
-              verseIdx = i + 1;
-              found = true;
-              break;
+            const similarity = stringSimilarity(tWord, vWord);
+            if (similarity > bestWordMatch && similarity > 0.7) {
+              bestWordMatch = similarity;
+              bestVIdx = i;
             }
           }
         }
 
-        if (!found && tWord.length > 2) {
-          // Strong word mismatch for long words = low score
-          break;
+        if (bestWordMatch > 0.7) {
+          totalMatches += bestWordMatch;
+          if (bestVIdx >= verseIdx - 1) {
+            consecutiveMatches++;
+          }
+          verseIdx = bestVIdx + 1;
         }
       }
 
-      score = (matchedWords / transcriptWords.length) * 0.85;
+      if (totalMatches > 0 && transcriptWords.length > 0) {
+        // Weight by consecutiveness and overall match rate
+        const matchRate = (totalMatches / transcriptWords.length);
+        const consecutiveBonus = (consecutiveMatches / transcriptWords.length) * 0.15;
+        score = Math.min(matchRate * 0.75 + consecutiveBonus, 0.85);
+      }
     }
 
-    // Update best match
-    if (score > 0.4 && (!bestMatch || score > bestMatch.score)) {
+    // Update best match if this is better
+    if (score > 0.3 && (!bestMatch || score > bestMatch.score)) {
       bestMatch = { verse, score };
     }
   }
@@ -162,6 +203,7 @@ export function VoiceRecognitionButton({
   const [targetAyah, setTargetAyah] = useState<number>(1);
   const [matchedVerseText, setMatchedVerseText] = useState<string>("");
   const [matchScore, setMatchScore] = useState(0);
+  const [lastProcessedTranscript, setLastProcessedTranscript] = useState("");
 
   // Auto-start listening when dialog opens
   useEffect(() => {
@@ -188,46 +230,51 @@ export function VoiceRecognitionButton({
     }
   }, [targetSurah, isListening, navigating, targetAyah, onNavigate]);
 
-  // Process transcript when received
+  // Process transcript when received (only process new transcripts)
   useEffect(() => {
-    if (transcript && !isListening) {
-      // First try to extract numbers (Surah numbers)
-      const numbers = extractNumbers(transcript);
-      
-      if (numbers.length > 0) {
-        const firstNum = numbers[0];
-        
-        // Check if it's a valid Surah number (1-114)
-        if (firstNum >= 1 && firstNum <= 114) {
-          const secondNum = numbers.length > 1 ? numbers[1] : 1;
-          setTargetSurah(firstNum);
-          setTargetAyah(Math.max(1, secondNum));
-          setMatchedVerseText(`Surah ${firstNum}${secondNum > 1 ? `, Verse ${secondNum}` : ""}`);
-          setMatchScore(1.0);
-          return;
-        }
-      }
-
-      // Otherwise try to match Arabic verse text in current Surah
-      if (verses && verses.length > 0) {
-        const match = findArabicVerseMatch(transcript, verses);
-        
-        if (match && match.score > 0.4) {
-          setTargetSurah(currentSurah);
-          setTargetAyah(match.verse.ayah.numberInSurah);
-          setMatchedVerseText(match.verse.ayah.text);
-          setMatchScore(match.score);
-          return;
-        }
-      }
-
-      // No valid match
-      setTargetSurah(null);
-      setTargetAyah(1);
-      setMatchedVerseText("");
-      setMatchScore(0);
+    // Don't reprocess same transcript
+    if (!transcript || transcript === lastProcessedTranscript || isListening) {
+      return;
     }
-  }, [transcript, isListening, verses, currentSurah]);
+
+    setLastProcessedTranscript(transcript);
+
+    // Try to extract Surah numbers first
+    const numbers = extractNumbers(transcript);
+    
+    if (numbers.length > 0) {
+      const firstNum = numbers[0];
+      
+      // Surah number must be 1-114
+      if (firstNum >= 1 && firstNum <= 114) {
+        const secondNum = numbers.length > 1 ? numbers[1] : 1;
+        setTargetSurah(firstNum);
+        setTargetAyah(Math.max(1, secondNum));
+        setMatchedVerseText(`Surah ${firstNum}${secondNum > 1 ? `, Verse ${secondNum}` : ""}`);
+        setMatchScore(1.0);
+        return;
+      }
+    }
+
+    // Try to match Arabic verse text in current Surah
+    if (verses && verses.length > 0) {
+      const match = findArabicVerseMatch(transcript, verses);
+      
+      if (match && match.score > 0.35) {
+        setTargetSurah(currentSurah);
+        setTargetAyah(match.verse.ayah.numberInSurah);
+        setMatchedVerseText(match.verse.ayah.text);
+        setMatchScore(match.score);
+        return;
+      }
+    }
+
+    // No valid match found
+    setTargetSurah(null);
+    setTargetAyah(1);
+    setMatchedVerseText("");
+    setMatchScore(0);
+  }, [transcript, isListening, verses, currentSurah, lastProcessedTranscript]);
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -237,11 +284,13 @@ export function VoiceRecognitionButton({
       setTargetAyah(1);
       setMatchedVerseText("");
       setMatchScore(0);
+      setLastProcessedTranscript("");
       setNavigating(false);
     }
   };
 
   const surahName = targetSurah && surahs ? findSurahByNumber(targetSurah, surahs)?.englishName : "";
+  const matchQuality = matchScore > 0.85 ? "Excellent" : matchScore > 0.65 ? "Good" : matchScore > 0.45 ? "Fair" : "Low";
 
   return (
     <>
@@ -260,7 +309,7 @@ export function VoiceRecognitionButton({
           <DialogHeader>
             <DialogTitle>Voice Search</DialogTitle>
             <DialogDescription>
-              Say a Surah number (1-114) or recite an Ayah from the current Surah
+              Say a Surah number (1-114) or recite an Ayah clearly
             </DialogDescription>
           </DialogHeader>
 
@@ -295,7 +344,7 @@ export function VoiceRecognitionButton({
                 {navigating
                   ? "Going to your selection..."
                   : isListening
-                  ? "Speak clearly - say Surah number or recite an Ayah"
+                  ? "Speak clearly - recite the Ayah or say a Surah number"
                   : "Click to start listening"}
               </p>
             </div>
@@ -303,8 +352,8 @@ export function VoiceRecognitionButton({
             {/* Transcript Display */}
             {transcript && (
               <div className="p-4 rounded-lg bg-secondary/50 border border-border">
-                <p className="text-xs text-muted-foreground mb-2">You said:</p>
-                <p className="text-sm font-medium line-clamp-3">{transcript}</p>
+                <p className="text-xs text-muted-foreground mb-2">Recognized:</p>
+                <p className="text-sm font-medium line-clamp-4 dir-rtl">{transcript}</p>
               </div>
             )}
 
@@ -319,9 +368,9 @@ export function VoiceRecognitionButton({
             {matchedVerseText && targetSurah && (
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
                 <p className="text-xs text-muted-foreground mb-2">
-                  Found {matchScore > 0.8 ? "(Exact Match)" : `(${Math.round(matchScore * 100)}% Match)`}:
+                  Match Found ({matchQuality} - {Math.round(matchScore * 100)}%):
                 </p>
-                <p className="text-sm font-medium dir-rtl mb-3 line-clamp-3">
+                <p className="text-sm font-medium dir-rtl mb-3 line-clamp-4">
                   {matchedVerseText}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -332,13 +381,14 @@ export function VoiceRecognitionButton({
 
             {!isListening && !matchedVerseText && transcript && (
               <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  No match found. Please:
+                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium mb-2">
+                  No match found
                 </p>
-                <ul className="text-xs text-amber-700 dark:text-amber-400 list-disc list-inside space-y-1 mt-2">
-                  <li>Say a Surah number (1-114), e.g., "Surah 5"</li>
-                  <li>Or recite an Ayah clearly from the current Surah</li>
-                  <li>Speak in Standard Arabic (Fusha)</li>
+                <ul className="text-xs text-amber-700 dark:text-amber-400 list-disc list-inside space-y-1">
+                  <li>Try speaking more clearly and slowly</li>
+                  <li>Ensure you're in the correct Surah</li>
+                  <li>Use Standard Arabic (Fusha) pronunciation</li>
+                  <li>Or say a Surah number (1-114) instead</li>
                 </ul>
               </div>
             )}
@@ -358,7 +408,10 @@ export function VoiceRecognitionButton({
               )}
               {!isListening && !matchedVerseText && transcript && (
                 <Button
-                  onClick={() => startListening()}
+                  onClick={() => {
+                    setLastProcessedTranscript("");
+                    startListening();
+                  }}
                   className="flex-1"
                   data-testid="button-try-again"
                 >

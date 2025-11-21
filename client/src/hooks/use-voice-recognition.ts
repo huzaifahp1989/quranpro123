@@ -19,10 +19,12 @@ export function useVoiceRecognition() {
     }
 
     const recognitionInstance = new SpeechRecognition();
-    recognitionInstance.continuous = false;
+    recognitionInstance.continuous = true; // Keep listening for longer speech
     recognitionInstance.interimResults = true;
-    // Try Arabic first, but let browser auto-detect if it fails
-    recognitionInstance.lang = "ar-SA";
+    
+    // Try generic "ar" first, then ar-SA, then let browser try both
+    // Chrome/Firefox handle "ar" better for Quranic recitation
+    recognitionInstance.lang = "ar";
 
     recognitionInstance.onstart = () => {
       setIsListening(true);
@@ -43,7 +45,7 @@ export function useVoiceRecognition() {
         }
       }
       
-      // Show final result when available, otherwise show interim
+      // Prioritize final results, but show interim for real-time feedback
       if (final.trim()) {
         setTranscript(final.trim());
       } else if (interim.trim()) {
@@ -53,7 +55,10 @@ export function useVoiceRecognition() {
 
     recognitionInstance.onerror = (event: any) => {
       console.error("Speech Recognition Error:", event.error);
-      setError(`Error: ${event.error}. Please check your microphone and try again.`);
+      // Don't show error for "aborted" - that's normal when user stops
+      if (event.error !== "aborted") {
+        setError(`Error: ${event.error}. Please check your microphone.`);
+      }
       setIsListening(false);
     };
 
