@@ -20,7 +20,7 @@ interface TopNavProps {
   subtitle?: string;
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
-  pageIcon?: 'quran' | 'kids' | 'hadith' | 'fiqh' | 'surahs' | 'stories';
+  pageIcon?: 'quran' | 'kids' | 'hadith' | 'fiqh' | 'surahs' | 'stories' | 'memorize';
 }
 
 export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopNavProps) {
@@ -29,6 +29,7 @@ export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopN
 
   const navItems: NavItem[] = [
     { name: "Quran", href: "/", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-quran" },
+    { name: "Memorize", href: "/memorize", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-memorize" },
     { name: "Surahs", href: "/surahs", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-surahs" },
     { name: "Stories", href: "/stories", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-stories" },
     { name: "Fiqh", href: "/fiqh", icon: <Book className="w-4 h-4" />, testId: "button-nav-fiqh" },
@@ -51,6 +52,8 @@ export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopN
       case 'surahs':
         return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
       case 'stories':
+        return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
+      case 'memorize':
         return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;
       default:
         return <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />;

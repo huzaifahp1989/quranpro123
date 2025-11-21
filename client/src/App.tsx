@@ -9,6 +9,7 @@ import KidsLearning from "@/pages/KidsLearning";
 import QuranicStories from "@/pages/QuranicStories";
 import AllSurahs from "@/pages/AllSurahs";
 import Fiqh from "@/pages/Fiqh";
+import MemoQuran from "@/pages/MemoQuran";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/stories" component={QuranicStories} />
       <Route path="/surahs" component={AllSurahs} />
       <Route path="/fiqh" component={Fiqh} />
+      <Route path="/memorize" component={MemoQuran} />
       <Route component={NotFound} />
     </Switch>
   );
