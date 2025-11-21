@@ -332,6 +332,8 @@ export function EnhancedQaidah() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(lessons[0]);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(letters[0]);
+  const [selectedWord, setSelectedWord] = useState<QuranicWord>(quranicWords[0]);
+  const [selectedDifficultWord, setSelectedDifficultWord] = useState<DifficultWord>(difficultWords[0]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -405,12 +407,18 @@ export function EnhancedQaidah() {
       </div>
 
       <Tabs defaultValue="lessons" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 mb-6">
           <TabsTrigger value="lessons" data-testid="tab-lessons" className="text-xs sm:text-sm">
             Lessons
           </TabsTrigger>
           <TabsTrigger value="letters" data-testid="tab-letters" className="text-xs sm:text-sm">
             Letters
+          </TabsTrigger>
+          <TabsTrigger value="words" data-testid="tab-words" className="text-xs sm:text-sm">
+            Words
+          </TabsTrigger>
+          <TabsTrigger value="difficult" data-testid="tab-difficult" className="text-xs sm:text-sm">
+            Hard Words
           </TabsTrigger>
           <TabsTrigger value="practice" data-testid="tab-practice" className="text-xs sm:text-sm">
             Practice
@@ -613,6 +621,98 @@ export function EnhancedQaidah() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Quranic Words Tab */}
+        <TabsContent value="words" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-1 space-y-2">
+              {quranicWords.map((word, idx) => (
+                <Card
+                  key={idx}
+                  className={`hover-elevate cursor-pointer transition-all p-3 sm:p-4 ${
+                    selectedWord.arabic === word.arabic ? 'bg-primary/5 border-primary' : ''
+                  }`}
+                  onClick={() => setSelectedWord(word)}
+                  data-testid={`word-${idx}`}
+                >
+                  <p className="text-lg sm:text-2xl font-arabic mb-1" dir="rtl">{word.arabic}</p>
+                  <p className="text-xs sm:text-sm font-medium">{word.transliteration}</p>
+                  <p className="text-xs text-muted-foreground">{word.english}</p>
+                </Card>
+              ))}
+            </div>
+            <Card className="sm:col-span-2 hover-elevate">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-lg sm:text-2xl font-arabic" dir="rtl">{selectedWord.arabic}</CardTitle>
+                <CardDescription className="text-sm sm:text-base">{selectedWord.transliteration}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-3 sm:p-6">
+                <div className="bg-primary/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">English Meaning:</p>
+                  <p className="text-lg font-semibold text-primary">{selectedWord.english}</p>
+                </div>
+                <div className="bg-blue-500/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Found in:</p>
+                  <p className="text-sm">{selectedWord.surah}, Verse {selectedWord.ayah}</p>
+                </div>
+                <Button className="w-full gap-2" onClick={() => playWithSpeechSynthesis(selectedWord.arabic)} data-testid="button-hear-word">
+                  <Volume2 className="w-4 h-4" />
+                  Hear Word Pronunciation
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Difficult Words Tab */}
+        <TabsContent value="difficult" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-1 space-y-2">
+              {difficultWords.map((word, idx) => (
+                <Card
+                  key={idx}
+                  className={`hover-elevate cursor-pointer transition-all p-3 sm:p-4 ${
+                    selectedDifficultWord.arabic === word.arabic ? 'bg-primary/5 border-primary' : ''
+                  }`}
+                  onClick={() => setSelectedDifficultWord(word)}
+                  data-testid={`difficult-word-${idx}`}
+                >
+                  <p className="text-lg sm:text-xl font-arabic mb-1" dir="rtl">{word.arabic}</p>
+                  <p className="text-xs sm:text-sm font-medium">{word.transliteration}</p>
+                  <p className="text-xs text-muted-foreground">{word.english}</p>
+                </Card>
+              ))}
+            </div>
+            <Card className="sm:col-span-2 hover-elevate">
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-lg sm:text-2xl font-arabic" dir="rtl">{selectedDifficultWord.arabic}</CardTitle>
+                <CardDescription className="text-sm sm:text-base">{selectedDifficultWord.transliteration}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 p-3 sm:p-6">
+                <div className="bg-primary/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">English:</p>
+                  <p className="text-base font-semibold text-primary">{selectedDifficultWord.english}</p>
+                </div>
+                <div className="bg-yellow-500/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Meaning:</p>
+                  <p className="text-sm leading-relaxed">{selectedDifficultWord.meaning}</p>
+                </div>
+                <div className="bg-green-500/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Example:</p>
+                  <p className="text-sm leading-relaxed">{selectedDifficultWord.example}</p>
+                </div>
+                <div className="bg-blue-500/5 p-4 rounded-lg">
+                  <p className="text-sm font-medium mb-2">Found in:</p>
+                  <p className="text-sm">{selectedDifficultWord.surah}</p>
+                </div>
+                <Button className="w-full gap-2" onClick={() => playWithSpeechSynthesis(selectedDifficultWord.arabic)} data-testid="button-hear-difficult">
+                  <Volume2 className="w-4 h-4" />
+                  Hear Pronunciation
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
