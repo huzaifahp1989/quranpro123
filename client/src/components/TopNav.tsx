@@ -30,6 +30,7 @@ export function TopNav({ title, subtitle, theme, onThemeToggle, pageIcon }: TopN
   const navItems: NavItem[] = [
     { name: "Quran", href: "/", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-quran" },
     { name: "Memorize", href: "/memorize", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-memorize" },
+    { name: "Qaida", href: "/qaida", icon: <GraduationCap className="w-4 h-4" />, testId: "button-nav-qaida" },
     { name: "Surahs", href: "/surahs", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-surahs" },
     { name: "Stories", href: "/stories", icon: <BookOpen className="w-4 h-4" />, testId: "button-nav-stories" },
     { name: "Fiqh", href: "/fiqh", icon: <Book className="w-4 h-4" />, testId: "button-nav-fiqh" },

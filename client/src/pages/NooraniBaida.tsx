@@ -57,14 +57,21 @@ export default function NooraniBaida() {
                 </div>
 
                 {/* PDF Viewer */}
-                <div className="w-full border rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900" style={{ height: 'calc(100vh - 300px)' }}>
-                  <embed
-                    src="/attached_assets/Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf"
+                <div className="w-full border rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 flex flex-col" style={{ height: 'calc(100vh - 300px)' }}>
+                  <object
+                    data="Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf"
                     type="application/pdf"
                     width="100%"
                     height="100%"
-                    className="w-full h-full"
-                  />
+                    className="w-full flex-1"
+                  >
+                    <iframe
+                      src="Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 'none' }}
+                    />
+                  </object>
                 </div>
 
                 <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
