@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Play, Pause, RotateCcw, Volume2, Loader2 } from "lucide-react";
+import { BookOpen, Book, Play, Pause, RotateCcw, Volume2, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
