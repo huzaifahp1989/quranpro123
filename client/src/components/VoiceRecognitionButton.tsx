@@ -92,15 +92,12 @@ function findArabicMatch(
       }
     }
 
-    console.log(`[Arabic Match] Ayah ${verse.ayah.numberInSurah}: score=${score.toFixed(3)}, verse="${normalizedVerse.substring(0, 40)}..."`);
-
     if (score > bestScore) {
       bestScore = score;
       bestMatch = verse;
     }
   }
 
-  console.log(`[Arabic Match] Best match: Ayah ${bestMatch?.ayah.numberInSurah}, score=${bestScore.toFixed(3)}`);
   return { verse: bestMatch, score: bestScore };
 }
 
@@ -115,23 +112,25 @@ export function VoiceRecognitionButton({
   const [matchedVerse, setMatchedVerse] = useState<VerseWithTranslations | null>(null);
   const [matchScore, setMatchScore] = useState(0);
 
+  // Auto-start listening when dialog opens
+  useEffect(() => {
+    if (isOpen && !isListening) {
+      startListening();
+    }
+  }, [isOpen, isListening, startListening]);
+
   // Search for matching ayah when transcript changes and it's final
   useEffect(() => {
     if (transcript && !isListening && verses && verses.length > 0) {
-      console.log('[Voice Search] Transcript received:', transcript);
       const { verse, score } = findArabicMatch(transcript, verses);
-      
-      console.log('[Voice Search] Search complete. Best match score:', score);
 
       // Accept any meaningful match (threshold: 20%)
       if (score > 0.2) {
         setMatchedVerse(verse);
         setMatchScore(score);
-        console.log('[Voice Search] Match found! Ayah:', verse?.ayah.numberInSurah);
       } else {
         setMatchedVerse(null);
         setMatchScore(0);
-        console.log('[Voice Search] No match found');
       }
     }
   }, [transcript, isListening, verses]);
@@ -145,31 +144,33 @@ export function VoiceRecognitionButton({
     }
   };
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (!open) {
+      stopListening();
+      setMatchedVerse(null);
+      setMatchScore(0);
+    }
+  };
+
   return (
     <>
       <Button
         variant="outline"
         size="icon"
-        onClick={() => {
-          if (isListening) {
-            stopListening();
-          } else {
-            setIsOpen(true);
-            startListening();
-          }
-        }}
+        onClick={() => setIsOpen(true)}
         data-testid="button-voice-recognition"
-        title="Recite Quran to find verse"
+        title="Click to recite Quran"
       >
         <Mic className={`w-4 h-4 ${isListening ? "animate-pulse" : ""}`} />
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Recite the Quran</DialogTitle>
             <DialogDescription>
-              Recite the Arabic verse clearly for best results
+              Speak the Arabic verse clearly - listening has started
             </DialogDescription>
           </DialogHeader>
 
@@ -187,13 +188,13 @@ export function VoiceRecognitionButton({
                   className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
                 />
                 <span className="font-medium">
-                  {isListening ? "Listening to your recitation..." : "Ready to listen"}
+                  {isListening ? "Listening now..." : "Starting to listen..."}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
                 {isListening
-                  ? "Speak the Arabic verse clearly"
-                  : "Click microphone and recite a Quranic verse"}
+                  ? "Recite the verse clearly in Arabic"
+                  : "Preparing to listen..."}
               </p>
             </div>
 
@@ -233,7 +234,7 @@ export function VoiceRecognitionButton({
                   No match found
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Try speaking more clearly or reciting a longer portion of the verse
+                  Try speaking more clearly or reciting a longer portion of the verse. Click "Try Again" to retry.
                 </p>
               </div>
             )}
@@ -260,14 +261,18 @@ export function VoiceRecognitionButton({
                   Go to Verse
                 </Button>
               )}
+              {!isListening && !matchedVerse && transcript && (
+                <Button
+                  onClick={() => startListening()}
+                  className="flex-1"
+                  data-testid="button-try-again"
+                >
+                  Try Again
+                </Button>
+              )}
               <Button
                 variant="outline"
-                onClick={() => {
-                  setIsOpen(false);
-                  stopListening();
-                  setMatchedVerse(null);
-                  setMatchScore(0);
-                }}
+                onClick={() => handleDialogOpenChange(false)}
                 className="flex-1"
                 data-testid="button-close-voice"
               >

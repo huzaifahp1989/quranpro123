@@ -29,14 +29,14 @@ export function useVoiceRecognition() {
       setTranscript("");
     };
 
-    recognitionInstance.onresult = (event: SpeechRecognitionEvent) => {
+    recognitionInstance.onresult = (event: any) => {
       let interim = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
+        const text = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          setTranscript(transcript);
+          setTranscript(text);
         } else {
-          interim += transcript;
+          interim += text;
         }
       }
       if (interim) {
@@ -44,7 +44,7 @@ export function useVoiceRecognition() {
       }
     };
 
-    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognitionInstance.onerror = (event: any) => {
       setError(`Error: ${event.error}`);
       setIsListening(false);
     };

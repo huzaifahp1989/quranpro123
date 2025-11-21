@@ -142,7 +142,7 @@ export default function QuranReader() {
               <VoiceRecognitionButton
                 verses={verses}
                 currentSurah={selectedSurah}
-                onNavigate={(surah, ayah) => {
+                onNavigate={(surah: number, ayah: number) => {
                   setSelectedSurah(surah);
                   setCurrentVerse(ayah);
                 }}
