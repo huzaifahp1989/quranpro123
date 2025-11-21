@@ -163,7 +163,8 @@ export const availableReciters: Reciter[] = [
   { identifier: "ar.minshawi", name: "Mohamed Siddiq al-Minshawi (Murattal)", style: "Hafs" },
   { identifier: "ar.husary", name: "Mahmoud Khalil Al-Hussary", style: "Hafs" },
   { identifier: "ar.shaatree", name: "Abu Bakr al-Shatri", style: "Hafs" },
-  { identifier: "ar.huzaifi", name: "Sheikh Muhammad Huzaifi", style: "Hafs" },
+  { identifier: "ar.sudais", name: "Sheikh Sudais", style: "Hafs" },
+  { identifier: "ar.ghamadi", name: "Sheikh Ghamdi", style: "Hafs" },
 ];
 
 // Translation identifiers for AlQuran Cloud API
