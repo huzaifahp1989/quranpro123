@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, Pause, Volume2, Zap, RotateCcw, BookOpen } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
+import { VoiceRecognitionButton } from "@/components/VoiceRecognitionButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -234,14 +235,28 @@ export default function MemoQuran() {
       <main className="max-w-4xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
         {/* Tabs */}
         <Tabs value={mainTab} onValueChange={setMainTab} className="w-full mb-6">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="lesson" className="flex items-center gap-2">
-              <span>Lesson</span>
-            </TabsTrigger>
-            <TabsTrigger value="guide" className="flex items-center gap-2">
-              <span>Guide</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between gap-2 mb-6">
+            <TabsList className="grid grid-cols-2">
+              <TabsTrigger value="lesson" className="flex items-center gap-2">
+                <span>Lesson</span>
+              </TabsTrigger>
+              <TabsTrigger value="guide" className="flex items-center gap-2">
+                <span>Guide</span>
+              </TabsTrigger>
+            </TabsList>
+            {allVerses && (
+              <VoiceRecognitionButton
+                verses={allVerses}
+                currentSurah={selectedSurah}
+                onNavigate={(surah, ayah) => {
+                  setSelectedSurah(surah);
+                  setStartVerse(ayah);
+                  setEndVerse(Math.min(ayah + 10, surahs?.find(s => s.number === surah)?.numberOfAyahs || ayah + 10));
+                  setCurrentVerseIndex(0);
+                }}
+              />
+            )}
+          </div>
 
           <TabsContent value="lesson" className="space-y-4">
             {/* Mode Toggle */}

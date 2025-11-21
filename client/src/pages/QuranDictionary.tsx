@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, Pause, Volume2, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
+import { VoiceRecognitionButton } from "@/components/VoiceRecognitionButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -77,9 +78,9 @@ export default function QuranDictionary() {
           </CardHeader>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Surah Selection */}
-          <Card>
+          <Card className="md:col-span-1">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Select Surah</CardTitle>
             </CardHeader>
@@ -103,7 +104,7 @@ export default function QuranDictionary() {
           </Card>
 
           {/* Reciter Selection */}
-          <Card>
+          <Card className="md:col-span-1">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Select Reciter</CardTitle>
             </CardHeader>
@@ -120,6 +121,25 @@ export default function QuranDictionary() {
                   ))}
                 </SelectContent>
               </Select>
+            </CardContent>
+          </Card>
+
+          {/* Voice Recognition Card */}
+          <Card className="md:col-span-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Voice Search</CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-end h-full pb-3">
+              {verses && (
+                <VoiceRecognitionButton
+                  verses={verses}
+                  currentSurah={selectedSurah}
+                  onNavigate={(surah, ayah) => {
+                    setSelectedSurah(surah);
+                    setExpandedVerses(new Set([ayah - 1]));
+                  }}
+                />
+              )}
             </CardContent>
           </Card>
         </div>
