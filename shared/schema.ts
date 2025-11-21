@@ -124,60 +124,21 @@ export type HadithCollection = z.infer<typeof hadithCollectionSchema>;
 
 // Hadith Schema
 export const hadithSchema = z.object({
-  collection: z.string(),
-  bookNumber: z.string().optional(),
-  hadithNumber: z.string(),
-  arabicText: z.string(),
-  englishText: z.string(),
+  number: z.number(),
+  arabicText: z.string().optional(),
+  englishText: z.string().optional(),
   urduText: z.string().optional(),
+  hadithNumber: z.string(),
   narrator: z.string().optional(),
+  book: z.string(),
+  collection: z.string(),
+  reference: z.string().optional(),
   grade: z.string().optional(),
-  reference: z.string(),
 });
 
 export type Hadith = z.infer<typeof hadithSchema>;
 
-// API Response schemas for external APIs
-export const quranApiResponseSchema = z.object({
-  code: z.number(),
-  status: z.string(),
-  data: z.any(),
-});
-
-export type QuranApiResponse = z.infer<typeof quranApiResponseSchema>;
-
-// Reading state (for UI)
-export const readingStateSchema = z.object({
-  currentSurah: z.number(),
-  currentAyah: z.number(),
-  isPlaying: z.boolean(),
-  selectedReciter: z.string(),
-});
-
-export type ReadingState = z.infer<typeof readingStateSchema>;
-
-// Available reciters with their identifiers for AlQuran Cloud API
-export const availableReciters: Reciter[] = [
-  { identifier: "ar.alafasy", name: "Mishary Rashid Alafasy", style: "Hafs" },
-  { identifier: "ar.abdulbasitmurattal", name: "Abdul Basit (Murattal)", style: "Hafs" },
-  { identifier: "ar.minshawi", name: "Mohamed Siddiq al-Minshawi (Murattal)", style: "Hafs" },
-  { identifier: "ar.husary", name: "Mahmoud Khalil Al-Hussary", style: "Hafs" },
-  { identifier: "ar.shaatree", name: "Abu Bakr al-Shatri", style: "Hafs" },
-  { identifier: "ar.abdulsamad", name: "Abdul Samad", style: "Hafs" },
-  { identifier: "ar.parhizgar", name: "Hani Rifai", style: "Hafs" },
-];
-
-// Translation identifiers for AlQuran Cloud API
-export const translationIdentifiers = {
-  urdu: "ur.jalandhry", // Fateh Muhammad Jalandhry
-  english: "en.sahih", // Sahih International
-};
-
-// ============================================================================
-// Database Tables (Drizzle ORM)
-// ============================================================================
-
-// Users table (for tracking anonymous and authenticated users)
+// Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   sessionId: varchar("session_id", { length: 255 }).notNull().unique(),
@@ -233,3 +194,37 @@ export const userPreferences = pgTable("user_preferences", {
 export const insertUserPreferencesSchema = createInsertSchema(userPreferences).omit({ id: true, updatedAt: true });
 export type InsertUserPreferences = z.infer<typeof insertUserPreferencesSchema>;
 export type UserPreferences = typeof userPreferences.$inferSelect;
+
+// Books Schema
+export const bookCategories = [
+  "Quran",
+  "Hadith",
+  "Tafseer",
+  "Seerah",
+  "Akhlaq",
+  "Sahabah",
+  "Kid Stories"
+] as const;
+
+export const booksTable = pgTable(
+  "books",
+  {
+    id: serial("id").primaryKey(),
+    title: varchar("title").notNull(),
+    category: varchar("category").notNull(),
+    description: varchar("description"),
+    pdfUrl: varchar("pdf_url"),
+    uploadedAt: timestamp("uploaded_at").defaultNow(),
+  },
+  (table) => [
+    index("idx_books_category").on(table.category),
+  ]
+);
+
+export const booksInsertSchema = createInsertSchema(booksTable).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export type Book = typeof booksTable.$inferSelect;
+export type BookInsert = z.infer<typeof booksInsertSchema>;

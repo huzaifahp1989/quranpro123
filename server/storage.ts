@@ -7,10 +7,13 @@ import {
   type InsertReadingPosition,
   type UserPreferences,
   type InsertUserPreferences,
+  type Book,
+  type BookInsert,
   users,
   bookmarks,
   readingPosition,
   userPreferences,
+  booksTable,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -34,6 +37,10 @@ export interface IStorage {
   // User preferences methods
   getUserPreferences(userId: number): Promise<UserPreferences | undefined>;
   upsertUserPreferences(preferences: InsertUserPreferences): Promise<UserPreferences>;
+
+  // Books methods
+  getAllBooks(): Promise<Book[]>;
+  createBook(book: BookInsert): Promise<Book>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -148,6 +155,22 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return result;
+  }
+
+  // Books methods
+  async getAllBooks(): Promise<Book[]> {
+    return await db
+      .select()
+      .from(booksTable)
+      .orderBy(desc(booksTable.uploadedAt));
+  }
+
+  async createBook(book: BookInsert): Promise<Book> {
+    const [newBook] = await db
+      .insert(booksTable)
+      .values(book)
+      .returning();
+    return newBook;
   }
 }
 
