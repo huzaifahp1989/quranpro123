@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Play, Pause, RotateCcw, Volume2, Loader2 } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, Loader2, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TopNav } from "@/components/TopNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -201,7 +201,7 @@ export default function KidsLearning() {
   return (
     <div className="min-h-screen bg-background">
       <audio ref={audioRef} preload="auto" />
-      <TopNav title="Learn Quran for Kids" subtitle="Listen, Learn, and Repeat" theme={theme} onThemeToggle={toggleTheme} />
+      <TopNav title="Learn Quran for Kids" subtitle="Listen, Learn, and Repeat" theme={theme} onThemeToggle={toggleTheme} pageIcon={<GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-8">
         <Tabs value={mainTab} onValueChange={setMainTab} className="mb-8">

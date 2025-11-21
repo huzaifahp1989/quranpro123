@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, BookOpen } from "lucide-react";
 import { SurahSelector } from "@/components/SurahSelector";
 import { VerseDisplay } from "@/components/VerseDisplay";
 import { AudioPlayer } from "@/components/AudioPlayer";
@@ -132,7 +132,7 @@ export default function QuranReader() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
-      <TopNav title="Al-Quran Al-Kareem" subtitle="The Noble Quran" theme={theme} onThemeToggle={toggleTheme} />
+      <TopNav title="Al-Quran Al-Kareem" subtitle="The Noble Quran" theme={theme} onThemeToggle={toggleTheme} pageIcon={<BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />} />
       
       {surahs && (
         <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">

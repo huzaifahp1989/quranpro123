@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Book } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TopNav } from "@/components/TopNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -470,7 +470,7 @@ export default function Fiqh() {
 
   return (
     <div className="min-h-screen bg-background">
-      <TopNav title="Islamic Fiqh" subtitle="Basic Rules & Principles" theme={theme} onThemeToggle={toggleTheme} />
+      <TopNav title="Islamic Fiqh" subtitle="Basic Rules & Principles" theme={theme} onThemeToggle={toggleTheme} pageIcon={<Book className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
