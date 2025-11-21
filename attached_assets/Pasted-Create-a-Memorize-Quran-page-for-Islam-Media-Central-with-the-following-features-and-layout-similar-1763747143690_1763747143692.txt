@@ -1,0 +1,182 @@
+Create a Memorize Quran page for Islam Media Central with the following features and layout, similar to QuranCentral’s memorize interface but designed uniquely for our brand (blue/white theme):
+
+
+---
+
+🔹 1. Top Section
+
+Title: Memorize Quran
+
+Tabs:
+
+Lesson
+
+Guide
+
+
+Clean and mobile-friendly UI.
+
+
+
+---
+
+🔹 2. Reciter Selection
+
+Add a dropdown + icon to choose a reciter:
+
+Mahmoud Khalil Al-Husary
+
+Abdul Basit
+
+Mishary Alafasy
+
+Saud Al-Shuraim
+
+Any others we want to add later
+
+
+Backend should support adding reciters easily.
+
+
+---
+
+🔹 3. Surah Selection
+
+Add a dropdown to choose Surah:
+
+Show surah number + name
+
+Example: 1. Al-Fātiha
+
+Auto-load number of verses (from API or database)
+
+
+
+---
+
+🔹 4. Verse Range Selection
+
+Allow user to select:
+
+Start Verse
+
+End Verse
+
+
+Use number selectors with up/down arrows.
+
+
+---
+
+🔹 5. Playback Controls
+
+Under “Playback” add:
+
+Playback speed
+
+Decrease speed button (–)
+
+Speed display (e.g., 1.0x)
+
+Increase speed button (+)
+
+
+Repeat Controls
+
+Dropdown: Repeat each verse (1x, 3x, 5x, 10x…)
+
+Toggle: Repeat after reciter (On/Off)
+
+
+Play Buttons
+
+Big Play / Pause button
+
+Loop button
+
+Stop button
+
+
+Mobile-friendly buttons just like QuranCentral.
+
+
+---
+
+🔹 6. Audio Player
+
+Sticky bottom audio player:
+
+Play/Pause
+
+Seek bar
+
+Settings button
+
+Works on mobile WebView
+
+Supports background playback
+
+
+
+---
+
+🔹 7. Backend / API Requirements
+
+Connect to a Quran API or local data:
+
+Verse text (Arabic)
+
+Audio URL for each verse
+
+Surah details
+
+Reciter audio library
+
+
+Must support:
+
+Verse-by-verse playback
+
+Auto-repeat
+
+Auto-next verse
+
+
+
+---
+
+🔹 8. UI/UX Requirements
+
+Fully responsive for mobile app WebView
+
+Dark mode support
+
+Fast loading
+
+Islamic Media Central branding
+
+Clean modern buttons
+
+Smooth transitions
+
+
+
+---
+
+🔹 9. Optional Extra Features
+
+(Add if possible)
+
+Highlight current verse being recited
+
+Show English translation under each verse
+
+Add Tafsir popup
+
+Add “Mark as Memorised” button
+
+Save user progress in Firebase (per surah/per ayah)
+
+
+
+---
