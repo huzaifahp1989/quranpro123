@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Moon, Sun, GraduationCap, Book, Search } from "lucide-react";
-import { Link } from "wouter";
+import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { TopNav } from "@/components/TopNav";
 
 interface Surah {
   number: number;
@@ -141,6 +141,9 @@ export default function AllSurahs() {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     if (savedTheme) {
       setTheme(savedTheme);
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
     }
   }, []);
 
@@ -160,58 +163,10 @@ export default function AllSurahs() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <TopNav title="All Surahs" subtitle="114 Chapters of the Quran" theme={theme} onThemeToggle={toggleTheme} />
+      
+      <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-semibold truncate">All Surahs</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">114 Chapters of the Quran</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              <Link href="/stories">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-stories"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Stories"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-quran"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Quran"
-                >
-                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleTheme}
-                data-testid="button-theme-toggle"
-                aria-label="Toggle theme"
-                className="h-8 w-8 sm:h-9 sm:w-9"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
-                ) : (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
-                )}
-              </Button>
-            </div>
-          </div>
-
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             <Input
@@ -223,7 +178,7 @@ export default function AllSurahs() {
             />
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <div className="mb-6">

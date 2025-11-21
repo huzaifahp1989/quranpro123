@@ -470,70 +470,7 @@ export default function Fiqh() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-semibold truncate">Islamic Fiqh</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Basic Rules & Principles</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 overflow-x-auto">
-              <Link href="/surahs">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-surahs"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Surahs"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/stories">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-stories"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Stories"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-quran"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Quran"
-                >
-                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleTheme}
-                data-testid="button-theme-toggle"
-                aria-label="Toggle theme"
-                className="h-8 w-8 sm:h-9 sm:w-9"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5" />
-                ) : (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopNav title="Islamic Fiqh" subtitle="Basic Rules & Principles" theme={theme} onThemeToggle={toggleTheme} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
