@@ -32,6 +32,8 @@ export default function MemoQuran() {
       setSelectedSurah(juz.startSurah);
       setStartVerse(juz.startAyah);
       setEndVerse(Math.min(juz.endAyah, 286)); // Max verses in any surah
+      setCurrentVerseIndex(0); // Reset to first verse when switching Juz
+      setIsPlaying(false); // Stop any ongoing playback
     }
   };
 
@@ -81,6 +83,12 @@ export default function MemoQuran() {
   const verseRange = getVerseRange();
 
   const playCurrentVerse = () => {
+    // Check if verses are loaded
+    if (!verses || verses.length === 0) {
+      console.warn('Verses not loaded yet');
+      return;
+    }
+    
     if (currentVerseIndex >= verseRange.length) {
       setCurrentVerseIndex(0);
       setIsPlaying(false);
@@ -131,6 +139,11 @@ export default function MemoQuran() {
       audioRef.current?.pause();
       setIsPlaying(false);
     } else {
+      // Check if verses are loaded before playing
+      if (!verses || verses.length === 0) {
+        console.warn('Please wait for verses to load');
+        return;
+      }
       setCurrentVerseIndex(0);
       // Store repeat count for auto-progression
       localStorage.setItem('lastRepeatCount', repeatCount.toString());
@@ -255,7 +268,7 @@ export default function MemoQuran() {
                     <SelectContent>
                       {surahs?.map((surah) => (
                         <SelectItem key={surah.number} value={surah.number.toString()}>
-                          <span className="font-semibold">{surah.number}. {surah.name}</span>
+                          <span className="font-semibold">{surah.number}. <span className="font-arabic">{surah.name}</span></span>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -263,7 +276,7 @@ export default function MemoQuran() {
                   {currentSurah && (
                     <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-center">
                       <p className="text-xs text-muted-foreground mb-1">Selected Surah</p>
-                      <p className="text-base font-semibold">{currentSurah.number}. {currentSurah.name}</p>
+                      <p className="text-base font-semibold">{currentSurah.number}. <span className="font-arabic">{currentSurah.name}</span></p>
                       <p className="text-xs text-muted-foreground mt-1">{currentSurah.numberOfAyahs} verses • {currentSurah.revelationType}</p>
                     </div>
                   )}
@@ -326,6 +339,16 @@ export default function MemoQuran() {
               </CardContent>
             </Card>
 
+            {/* Loading indicator for Juz mode */}
+            {mode === 'juz' && isVersesLoading && (
+              <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                <CardContent className="pt-4 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
+                  <p className="text-sm text-blue-700 dark:text-blue-300">Loading Juz verses...</p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Playback Settings */}
             <Card>
               <CardHeader className="pb-3">
@@ -368,7 +391,13 @@ export default function MemoQuran() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button size="lg" className="flex-1 gap-2" onClick={handlePlayClick} data-testid="btn-play-pause">
+                  <Button 
+                    size="lg" 
+                    className="flex-1 gap-2" 
+                    onClick={handlePlayClick} 
+                    data-testid="btn-play-pause"
+                    disabled={isVersesLoading}
+                  >
                     {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                     {isPlaying ? 'Pause' : 'Play'}
                   </Button>
