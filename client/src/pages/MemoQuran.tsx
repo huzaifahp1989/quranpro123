@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Play, Pause, Volume2, Zap, RotateCcw, BookOpen } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
@@ -22,6 +22,10 @@ export default function MemoQuran() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [mainTab, setMainTab] = useState('lesson');
+  const [continueMode, setContinueMode] = useState(true); // Auto-play next verse
+  const [audioMode, setAudioMode] = useState<'recitation' | 'translation'>('recitation'); // Recitation or translation audio
+  const [pausePerVerse, setPausePerVerse] = useState(false); // Pause after each verse
+  const [currentRepeatCount, setCurrentRepeatCount] = useState(1); // Track repeats for current verse
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Handle Juz selection
@@ -82,7 +86,7 @@ export default function MemoQuran() {
 
   const verseRange = getVerseRange();
 
-  const playCurrentVerse = () => {
+  const playCurrentVerse = useCallback(() => {
     // Check if verses are loaded
     if (!verses || verses.length === 0) {
       console.warn('Verses not loaded yet');
@@ -94,45 +98,57 @@ export default function MemoQuran() {
       setIsPlaying(false);
       return;
     }
+    
     const verse = verseRange[currentVerseIndex];
-    const audioUrl = verse?.ayah?.audio;
+    let audioUrl: string | undefined;
+    
+    // Select audio based on audioMode
+    if (audioMode === 'recitation') {
+      audioUrl = verse?.ayah?.audio;
+    } else {
+      // Use English translation audio if available
+      audioUrl = verse?.englishTranslation?.audio;
+    }
+    
     if (audioUrl && audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.playbackRate = playbackSpeed;
       audioRef.current.play().catch(err => console.error('Play error:', err));
       setIsPlaying(true);
     }
-  };
+  }, [verses, verseRange, currentVerseIndex, playbackSpeed, audioMode]);
 
   useEffect(() => {
     if (!audioRef.current) return;
     const audio = audioRef.current;
     const handleEnded = () => {
-      if (repeatCount > 1) {
-        setRepeatCount(prev => prev - 1);
+      if (currentRepeatCount > 1) {
+        setCurrentRepeatCount(prev => prev - 1);
         setTimeout(() => playCurrentVerse(), 500);
       } else {
-        // Reset repeat count for next verse
-        setRepeatCount(parseInt(localStorage.getItem('lastRepeatCount') || '1'));
+        // Verse finished - decide what to do next
+        setCurrentRepeatCount(repeatCount);
         
-        // Move to next verse
-        setCurrentVerseIndex(prev => {
-          const newIndex = prev + 1;
+        if (pausePerVerse) {
+          // Stop and pause on each verse
+          setIsPlaying(false);
+        } else if (continueMode) {
+          // Auto-play next verse
+          const newIndex = currentVerseIndex + 1;
           if (newIndex >= verseRange.length) {
             setIsPlaying(false);
-            return prev; // Stay on last verse
+            return;
           }
-          // Auto-play next verse after a short delay
-          setTimeout(() => {
-            setCurrentVerseIndex(newIndex);
-          }, 300);
-          return newIndex;
-        });
+          setCurrentVerseIndex(newIndex);
+        } else {
+          // Stop at end of verse
+          setIsPlaying(false);
+        }
       }
     };
     audio.addEventListener('ended', handleEnded);
     return () => audio.removeEventListener('ended', handleEnded);
-  }, [currentVerseIndex, repeatCount, repeatAfterReciter, verseRange.length, playCurrentVerse]);
+  }, [currentVerseIndex, repeatCount, pausePerVerse, continueMode, verseRange.length, playCurrentVerse]);
 
   const handlePlayClick = () => {
     if (isPlaying) {
@@ -145,6 +161,7 @@ export default function MemoQuran() {
         return;
       }
       setCurrentVerseIndex(0);
+      setCurrentRepeatCount(repeatCount);
       // Store repeat count for auto-progression
       localStorage.setItem('lastRepeatCount', repeatCount.toString());
       playCurrentVerse();
@@ -374,6 +391,33 @@ export default function MemoQuran() {
                   <Button size="sm" variant={repeatAfterReciter ? "default" : "outline"} onClick={() => setRepeatAfterReciter(!repeatAfterReciter)} data-testid="btn-repeat-after">
                     {repeatAfterReciter ? 'On' : 'Off'}
                   </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-xs">Continue to Next Verse</label>
+                  <Button size="sm" variant={continueMode ? "default" : "outline"} onClick={() => setContinueMode(!continueMode)} data-testid="btn-continue-mode">
+                    {continueMode ? 'On' : 'Off'}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-xs">Pause After Each Verse</label>
+                  <Button size="sm" variant={pausePerVerse ? "default" : "outline"} onClick={() => setPausePerVerse(!pausePerVerse)} data-testid="btn-pause-per-verse">
+                    {pausePerVerse ? 'On' : 'Off'}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Audio Source</label>
+                  <Select value={audioMode} onValueChange={(val) => setAudioMode(val as 'recitation' | 'translation')}>
+                    <SelectTrigger className="border-primary/50" data-testid="select-audio-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="recitation">Quranic Recitation</SelectItem>
+                      <SelectItem value="translation">English Translation</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
