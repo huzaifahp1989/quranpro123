@@ -7,6 +7,7 @@ import QuranReader from "@/pages/QuranReader";
 import HadithBrowser from "@/pages/HadithBrowser";
 import KidsLearning from "@/pages/KidsLearning";
 import QuranicStories from "@/pages/QuranicStories";
+import AllSurahs from "@/pages/AllSurahs";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/hadith" component={HadithBrowser} />
       <Route path="/kids" component={KidsLearning} />
       <Route path="/stories" component={QuranicStories} />
+      <Route path="/surahs" component={AllSurahs} />
       <Route component={NotFound} />
     </Switch>
   );

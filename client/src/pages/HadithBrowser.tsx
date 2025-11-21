@@ -92,7 +92,18 @@ export default function HadithBrowser() {
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">Authentic Traditions of Prophet Muhammad ﷺ</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 overflow-x-auto">
+              <Link href="/surahs">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-nav-surahs"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Surahs"
+                >
+                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </Link>
               <Link href="/stories">
                 <Button
                   variant="outline"
