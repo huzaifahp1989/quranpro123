@@ -481,13 +481,13 @@ export default function Fiqh() {
         </div>
 
         <Tabs defaultValue="wudhu" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6 gap-1">
             {fiqhTopics.map((topic) => (
               <TabsTrigger
                 key={topic.id}
                 value={topic.id}
                 data-testid={`tab-${topic.id}`}
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2 truncate"
               >
                 {topic.title.split(" ")[0]}
               </TabsTrigger>
