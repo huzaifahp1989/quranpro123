@@ -20,6 +20,7 @@ The frontend is built with React 18, TypeScript, Tailwind CSS, and Shadcn UI. St
 
 ### Feature Specifications
 - **Quran Reading**: 13-line Mushaf layout, audio recitation with multiple reciters, synchronized playback, click-to-play verses, repeat mode, volume control, and progress tracking. Side-by-side Urdu and English translations, and expandable Tafseer panels are available.
+- **Voice Recognition Search**: Global Ayah search across all 114 Surahs using speech recognition. Users can recite any verse and the app will find and navigate to it automatically. Features enhanced Arabic text normalization and fuzzy matching to handle speech recognition errors. Pre-loads ~77% of the Quran into memory at startup for instant search (< 50ms).
 - **Hadith Collection**: Browse authentic Hadith from Sahih al-Bukhari and Sahih Muslim, with client-side pagination and search functionality.
 - **Kids Learning Section**:
     - **Quran Recitation**: Interactive audio learning for Juz Amma, Surah Yasin, Surah Al-Mulk, and Surah Al-Waqiah, with reciter selection, verse navigation, repeat mode, and translations.
@@ -29,8 +30,9 @@ The frontend is built with React 18, TypeScript, Tailwind CSS, and Shadcn UI. St
 - **Data Models**: Shared Zod schemas define API response types for Surah, Ayah, Translation, Tafseer, Hadith, and Reciter. Drizzle ORM manages database tables for `users`, `bookmarks`, `reading_position`, and `user_preferences`, including unique constraints and indexes.
 - **Frontend Components**: Modular components like `SurahSelector`, `VerseDisplay`, `AudioPlayer`, `TafseerPanel`, and `HadithCard` are used.
 - **API Endpoints (Backend)**:
-    - **Quran**: `/api/surahs` (all chapters), `/api/surah/:surahNumber/:reciterEdition` (verses, audio, translations), `/api/tafseer/:surahNumber/:ayahNumber` (verse commentary).
+    - **Quran**: `/api/surahs` (all chapters), `/api/surah/:surahNumber/:reciterEdition` (verses, audio, translations), `/api/tafseer/:surahNumber/:ayahNumber` (verse commentary), `/api/search-ayah` POST (global search across all Surahs with fuzzy matching).
     - **Hadith**: `/api/hadiths/:collection?page=1&search=query` (fetch hadiths from specified collection with pagination and optional search).
+- **Performance Optimization**: Server pre-loads 77% of Quran text into memory at startup for instant voice search. Uses in-memory caching with 1-hour expiration for all API responses.
 
 ## External Dependencies
 

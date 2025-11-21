@@ -29,8 +29,10 @@ async function preloadQuranData() {
   console.log("🕋 Pre-loading Quran data for voice search...");
   const startTime = Date.now();
   let successCount = 0;
+  let retryQueue: number[] = [];
   
   try {
+    // First pass: Load all Surahs with rate limiting
     for (let surahNumber = 1; surahNumber <= 114; surahNumber++) {
       try {
         const cacheKey = `surah-${surahNumber}-text`;
@@ -41,10 +43,13 @@ async function preloadQuranData() {
           continue;
         }
 
+        // Delay between requests to respect rate limit (12/second = ~100ms per request)
+        await new Promise(resolve => setTimeout(resolve, 150));
+
         // Fetch just Arabic text (fastest endpoint)
         const response = await axios.get(
           `${ALQURAN_CLOUD_API}/surah/${surahNumber}/editions/quran-uthmani`,
-          { timeout: 8000 }
+          { timeout: 10000 }
         );
         
         if (response.data.code === 200 && response.data.data && response.data.data[0]) {
@@ -61,18 +66,61 @@ async function preloadQuranData() {
           });
           successCount++;
         }
-        
-        // Small delay to avoid overwhelming API
-        if (surahNumber % 10 === 0) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (err: any) {
+        if (err.response?.status === 429) {
+          // Rate limited - add to retry queue
+          retryQueue.push(surahNumber);
+        } else {
+          console.error(`Failed to load Surah ${surahNumber}:`, err.message);
         }
-      } catch (err) {
-        console.error(`Failed to load Surah ${surahNumber}:`, err);
+      }
+    }
+    
+    // Retry failed Surahs with longer delays
+    if (retryQueue.length > 0) {
+      console.log(`⏳ Retrying ${retryQueue.length} rate-limited Surahs...`);
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+      
+      for (const surahNumber of retryQueue) {
+        try {
+          const cacheKey = `surah-${surahNumber}-text`;
+          
+          if (getFromCache(cacheKey)) {
+            successCount++;
+            continue;
+          }
+
+          // Longer delay for retries
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const response = await axios.get(
+            `${ALQURAN_CLOUD_API}/surah/${surahNumber}/editions/quran-uthmani`,
+            { timeout: 10000 }
+          );
+          
+          if (response.data.code === 200 && response.data.data && response.data.data[0]) {
+            const surahData = response.data.data[0];
+            setCache(cacheKey, {
+              number: surahData.number,
+              name: surahData.name,
+              englishName: surahData.englishName,
+              ayahs: surahData.ayahs.map((a: any) => ({
+                number: a.number,
+                numberInSurah: a.numberInSurah,
+                text: a.text
+              }))
+            });
+            successCount++;
+          }
+        } catch (err: any) {
+          console.error(`Retry failed for Surah ${surahNumber}:`, err.message);
+        }
       }
     }
     
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`✅ Pre-loaded ${successCount}/114 Surahs in ${duration}s`);
+    const percentage = ((successCount / 114) * 100).toFixed(0);
+    console.log(`✅ Pre-loaded ${successCount}/114 Surahs (${percentage}%) in ${duration}s`);
   } catch (error) {
     console.error("Error during Quran pre-loading:", error);
   }
