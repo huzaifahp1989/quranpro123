@@ -168,6 +168,17 @@ export default function QuranReader() {
                   <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </Link>
+              <Link href="/fiqh">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-nav-fiqh"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Fiqh"
+                >
+                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </Link>
               <Link href="/kids">
                 <Button
                   variant="outline"
