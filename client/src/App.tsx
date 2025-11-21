@@ -10,6 +10,7 @@ import QuranicStories from "@/pages/QuranicStories";
 import AllSurahs from "@/pages/AllSurahs";
 import Fiqh from "@/pages/Fiqh";
 import MemoQuran from "@/pages/MemoQuran";
+import QuranDictionary from "@/pages/QuranDictionary";
 import NooraniBaida from "@/pages/NooraniBaida";
 import NotFound from "@/pages/not-found";
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/surahs" component={AllSurahs} />
       <Route path="/fiqh" component={Fiqh} />
       <Route path="/memorize" component={MemoQuran} />
+      <Route path="/dictionary" component={QuranDictionary} />
       <Route path="/qaida" component={NooraniBaida} />
       <Route component={NotFound} />
     </Switch>

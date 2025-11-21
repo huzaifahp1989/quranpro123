@@ -433,15 +433,10 @@ export default function MemoQuran() {
 
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Audio Source</label>
-                  <Select value={audioMode} onValueChange={(val) => setAudioMode(val as 'recitation' | 'translation')}>
-                    <SelectTrigger className="border-primary/50" data-testid="select-audio-mode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="recitation">Quranic Recitation</SelectItem>
-                      <SelectItem value="translation">English Translation</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="p-2 bg-muted/50 rounded-md">
+                    <p className="text-xs font-semibold text-foreground">Quranic Recitation</p>
+                    <p className="text-xs text-muted-foreground mt-1">Translation audio available in Quran Dictionary</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
