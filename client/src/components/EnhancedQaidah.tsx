@@ -1,9 +1,41 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Play, Volume2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+
+// Map Arabic letters to audio filenames
+const letterAudioMap: { [key: string]: string } = {
+  "ا": "alif",
+  "ب": "baa",
+  "ت": "taa",
+  "ث": "thaa",
+  "ج": "jeem",
+  "ح": "haa",
+  "خ": "khaa",
+  "د": "dal",
+  "ذ": "thal",
+  "ر": "raa",
+  "ز": "zay",
+  "س": "seen",
+  "ش": "sheen",
+  "ص": "saad",
+  "ض": "daad",
+  "ط": "taa_h",
+  "ظ": "zaa",
+  "ع": "ayn",
+  "غ": "ghayn",
+  "ف": "faa",
+  "ق": "qaaf",
+  "ك": "kaaf",
+  "ل": "laam",
+  "م": "meem",
+  "ن": "noon",
+  "ه": "haa_h",
+  "و": "waaw",
+  "ي": "yaa",
+};
 
 interface Letter {
   arabic: string;
@@ -182,7 +214,16 @@ export function EnhancedQaidah() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(lessons[0]);
   const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
   const [selectedLetter, setSelectedLetter] = useState<Letter | null>(letters[0]);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    audioRef.current = new Audio();
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   const markLessonComplete = (lessonId: string) => {
     const newCompleted = new Set(completedLessons);
@@ -191,6 +232,27 @@ export function EnhancedQaidah() {
   };
 
   const playLetterSound = (letter: string) => {
+    try {
+      // First try to play from audio files
+      const audioFilename = letterAudioMap[letter];
+      if (audioFilename && audioRef.current) {
+        const audioUrl = `/audio/letters/${audioFilename}.mp3`;
+        audioRef.current.src = audioUrl;
+        audioRef.current.play().catch(error => {
+          console.log('Audio file not found, trying speech synthesis:', error);
+          playWithSpeechSynthesis(letter);
+        });
+      } else {
+        // Fallback to speech synthesis
+        playWithSpeechSynthesis(letter);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      playWithSpeechSynthesis(letter);
+    }
+  };
+
+  const playWithSpeechSynthesis = (letter: string) => {
     if (!('speechSynthesis' in window)) {
       console.log('Speech synthesis not available');
       return;
@@ -202,7 +264,7 @@ export function EnhancedQaidah() {
       utterance.rate = 0.7;
       window.speechSynthesis.speak(utterance);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error in speech synthesis:', error);
     }
   };
 
