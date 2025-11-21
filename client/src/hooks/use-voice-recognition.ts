@@ -9,10 +9,10 @@ export function useVoiceRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [recognition, setRecognition] = useState<any>(null);
 
   useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setError("Speech Recognition not supported in your browser");
       return;
@@ -21,7 +21,8 @@ export function useVoiceRecognition() {
     const recognitionInstance = new SpeechRecognition();
     recognitionInstance.continuous = false;
     recognitionInstance.interimResults = true;
-    recognitionInstance.language = "ar-SA"; // Arabic Saudi
+    // Try Arabic first, but let browser auto-detect if it fails
+    recognitionInstance.lang = "ar-SA";
 
     recognitionInstance.onstart = () => {
       setIsListening(true);
@@ -31,21 +32,28 @@ export function useVoiceRecognition() {
 
     recognitionInstance.onresult = (event: any) => {
       let interim = "";
+      let final = "";
+      
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const text = event.results[i][0].transcript;
         if (event.results[i].isFinal) {
-          setTranscript(text);
+          final += text + " ";
         } else {
-          interim += text;
+          interim += text + " ";
         }
       }
-      if (interim) {
-        setTranscript(interim);
+      
+      // Show final result when available, otherwise show interim
+      if (final.trim()) {
+        setTranscript(final.trim());
+      } else if (interim.trim()) {
+        setTranscript(interim.trim());
       }
     };
 
     recognitionInstance.onerror = (event: any) => {
-      setError(`Error: ${event.error}`);
+      console.error("Speech Recognition Error:", event.error);
+      setError(`Error: ${event.error}. Please check your microphone and try again.`);
       setIsListening(false);
     };
 
@@ -58,15 +66,23 @@ export function useVoiceRecognition() {
 
   const startListening = useCallback(() => {
     if (recognition) {
-      setTranscript("");
-      setError(null);
-      recognition.start();
+      try {
+        setTranscript("");
+        setError(null);
+        recognition.start();
+      } catch (err) {
+        console.error("Error starting recognition:", err);
+      }
     }
   }, [recognition]);
 
   const stopListening = useCallback(() => {
     if (recognition) {
-      recognition.stop();
+      try {
+        recognition.stop();
+      } catch (err) {
+        console.error("Error stopping recognition:", err);
+      }
     }
   }, [recognition]);
 
