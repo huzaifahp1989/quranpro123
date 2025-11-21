@@ -33,7 +33,7 @@ function extractNumbers(text: string): number[] {
 }
 
 function normalizeArabic(text: string): string {
-  let normalized = text
+  return text
     .replace(/[\u064B-\u0652]/g, '')
     .replace(/[\u0640\u061C\u200E\u200F]/g, '')
     .replace(/أ/g, 'ا')
@@ -43,8 +43,6 @@ function normalizeArabic(text: string): string {
     .replace(/ى/g, 'ي')
     .replace(/\s+/g, ' ')
     .trim();
-  
-  return normalized;
 }
 
 function levenshteinDistance(str1: string, str2: string): number {
@@ -91,16 +89,11 @@ function findArabicVerseMatch(
 ): { verse: VerseWithTranslations; score: number } | null {
   const normalizedTranscript = normalizeArabic(transcript);
   
-  console.log("🎙️ Searching with transcript:", transcript);
-  console.log("📝 Normalized transcript:", normalizedTranscript);
-  
   if (normalizedTranscript.length < 2) {
-    console.log("⚠️ Transcript too short");
     return null;
   }
 
   let bestMatch: { verse: VerseWithTranslations; score: number } | null = null;
-  let matchAttempts = 0;
 
   for (const verse of verses) {
     const normalizedVerse = normalizeArabic(verse.ayah.text);
@@ -108,15 +101,12 @@ function findArabicVerseMatch(
 
     if (normalizedVerse.includes(normalizedTranscript)) {
       score = 1.0;
-      console.log(`✅ EXACT MATCH - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
     else if (normalizedVerse.startsWith(normalizedTranscript)) {
       score = 0.95;
-      console.log(`✅ STARTS WITH - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
     else if (normalizedVerse.substring(0, Math.ceil(normalizedVerse.length * 0.7)).includes(normalizedTranscript)) {
       score = 0.90;
-      console.log(`✅ IN FIRST PART - Verse ${verse.ayah.numberInSurah}: ${score}`);
     }
     else {
       const transcriptWords = normalizedTranscript
@@ -159,19 +149,13 @@ function findArabicVerseMatch(
 
       if (matchedWords > 0) {
         score = (totalSimilarity / transcriptWords.length) * 0.85;
-        console.log(`📊 WORD MATCH - Verse ${verse.ayah.numberInSurah}: ${score.toFixed(2)} (matched ${matchedWords}/${transcriptWords.length} words)`);
       }
     }
 
-    matchAttempts++;
-
     if (score > 0.5 && (!bestMatch || score > bestMatch.score)) {
-      console.log(`🎯 NEW BEST MATCH - Verse ${verse.ayah.numberInSurah}: ${score.toFixed(2)}`);
       bestMatch = { verse, score };
     }
   }
-
-  console.log(`\n📈 Final Result - Checked ${matchAttempts} verses, Best score: ${bestMatch?.score.toFixed(2) || 'none'}`);
   
   return bestMatch;
 }
@@ -190,6 +174,7 @@ export function VoiceRecognitionButton({
   const { isListening, transcript, error, startListening, stopListening } =
     useVoiceRecognition();
   const [isOpen, setIsOpen] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [matchedVerseText, setMatchedVerseText] = useState<string>("");
   const [matchScore, setMatchScore] = useState(0);
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState("");
@@ -203,67 +188,55 @@ export function VoiceRecognitionButton({
     }
   }, [isOpen, isListening, startListening, activeTab]);
 
-  // Process transcript when received
   useEffect(() => {
     if (!transcript || transcript === lastProcessedTranscript || isListening) {
       return;
     }
 
-    console.log("\n=== PROCESSING TRANSCRIPT ===");
-    console.log("Raw transcript:", transcript);
     setLastProcessedTranscript(transcript);
 
-    // Try extracting numbers first (Surah navigation)
     const numbers = extractNumbers(transcript);
     
     if (numbers.length > 0) {
       const firstNum = numbers[0];
       
       if (firstNum >= 1 && firstNum <= 114) {
-        console.log(`✅ Detected Surah number: ${firstNum}`);
         const secondNum = numbers.length > 1 ? numbers[1] : 1;
+        setNavigating(true);
         setMatchedVerseText(`Surah ${firstNum}${secondNum > 1 ? `, Verse ${secondNum}` : ""}`);
         setMatchScore(1.0);
         
-        // Directly navigate without state delay
-        console.log(`🚀 NAVIGATING TO: Surah ${firstNum}, Verse ${secondNum}`);
         onNavigate(firstNum, Math.max(1, secondNum));
         
-        // Close dialog after a delay
         setTimeout(() => {
           setIsOpen(false);
+          setNavigating(false);
           setMatchedVerseText("");
           setMatchScore(0);
           setLastProcessedTranscript("");
-        }, 500);
+        }, 2000);
         return;
       }
     }
 
-    // Try matching Arabic verse text
     if (verses && verses.length > 0) {
-      console.log(`🔍 Searching among ${verses.length} verses...`);
       const match = findArabicVerseMatch(transcript, verses);
       
       if (match && match.score > 0.5) {
-        console.log(`✅ FOUND MATCH - Verse ${match.verse.ayah.numberInSurah} with score ${match.score.toFixed(2)}`);
+        setNavigating(true);
         setMatchedVerseText(match.verse.ayah.text);
         setMatchScore(match.score);
         
-        // Directly navigate without state delay
-        console.log(`🚀 NAVIGATING TO: Surah ${currentSurah}, Verse ${match.verse.ayah.numberInSurah}`);
         onNavigate(currentSurah, match.verse.ayah.numberInSurah);
         
-        // Close dialog after a delay
         setTimeout(() => {
           setIsOpen(false);
+          setNavigating(false);
           setMatchedVerseText("");
           setMatchScore(0);
           setLastProcessedTranscript("");
-        }, 500);
+        }, 2000);
         return;
-      } else {
-        console.log("❌ No match found");
       }
     }
 
@@ -288,19 +261,20 @@ export function VoiceRecognitionButton({
   };
 
   const handleSelectVerse = (verse: VerseWithTranslations) => {
+    setNavigating(true);
     setMatchedVerseText(verse.ayah.text);
     setMatchScore(1.0);
     
-    console.log(`🚀 NAVIGATING TO: Surah ${currentSurah}, Verse ${verse.ayah.numberInSurah}`);
     onNavigate(currentSurah, verse.ayah.numberInSurah);
     
     setTimeout(() => {
       setIsOpen(false);
+      setNavigating(false);
       setMatchedVerseText("");
       setMatchScore(0);
       setTextSearchInput("");
       setTextSearchResults([]);
-    }, 500);
+    }, 2000);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -312,6 +286,7 @@ export function VoiceRecognitionButton({
       setLastProcessedTranscript("");
       setTextSearchInput("");
       setTextSearchResults([]);
+      setNavigating(false);
     }
   };
 
@@ -326,7 +301,7 @@ export function VoiceRecognitionButton({
         data-testid="button-voice-recognition"
         title="Voice search"
       >
-        <Mic className={`w-4 h-4 ${isListening ? "animate-pulse" : ""}`} />
+        <Mic className={`w-4 h-4 ${isListening || navigating ? "animate-pulse" : ""}`} />
       </Button>
 
       <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
@@ -338,7 +313,7 @@ export function VoiceRecognitionButton({
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" disabled={navigating}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="voice">Voice</TabsTrigger>
               <TabsTrigger value="search">Text Search</TabsTrigger>
@@ -347,24 +322,32 @@ export function VoiceRecognitionButton({
             <TabsContent value="voice" className="space-y-4">
               <div
                 className={`p-6 rounded-lg border-2 transition-all ${
-                  isListening
+                  navigating
+                    ? "border-green-500 bg-green-500/5"
+                    : isListening
                     ? "border-primary bg-primary/5"
                     : "border-border bg-background"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <Volume2
-                    className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
-                  />
+                  {navigating ? (
+                    <CheckCircle className="w-5 h-5 text-green-500 animate-pulse" />
+                  ) : (
+                    <Volume2
+                      className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
+                    />
+                  )}
                   <span className="font-medium">
-                    {isListening 
+                    {navigating 
+                      ? "Navigating to verse..." 
+                      : isListening 
                       ? "Listening..." 
                       : "Ready"}
                   </span>
                 </div>
               </div>
 
-              {transcript && (
+              {transcript && !navigating && (
                 <div className="p-4 rounded-lg bg-secondary/50 border border-border">
                   <p className="text-xs text-muted-foreground mb-2">Recognized:</p>
                   <p className="text-sm font-medium line-clamp-3 dir-rtl">{transcript}</p>
@@ -377,17 +360,17 @@ export function VoiceRecognitionButton({
                 </div>
               )}
 
-              {matchedVerseText && (
+              {matchedVerseText && navigating && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <p className="text-xs text-muted-foreground mb-2">Found ({Math.round(matchScore * 100)}%):</p>
-                  <p className="text-sm font-medium dir-rtl mb-3 line-clamp-3">
+                  <p className="text-sm font-medium dir-rtl mb-2 line-clamp-2">
                     {matchedVerseText}
                   </p>
                 </div>
               )}
 
               <div className="flex gap-2">
-                {isListening && (
+                {isListening && !navigating && (
                   <Button
                     variant="destructive"
                     onClick={stopListening}
@@ -397,7 +380,7 @@ export function VoiceRecognitionButton({
                     Stop
                   </Button>
                 )}
-                {!isListening && !matchedVerseText && transcript && (
+                {!isListening && !navigating && !matchedVerseText && transcript && (
                   <Button
                     onClick={() => {
                       setLastProcessedTranscript("");
@@ -412,6 +395,7 @@ export function VoiceRecognitionButton({
                   variant="outline"
                   onClick={() => handleDialogOpenChange(false)}
                   className="flex-1"
+                  disabled={navigating}
                 >
                   Close
                 </Button>
@@ -428,6 +412,7 @@ export function VoiceRecognitionButton({
                     onChange={(e) => handleTextSearch(e.target.value)}
                     className="pl-10"
                     dir="rtl"
+                    disabled={navigating}
                   />
                 </div>
 
@@ -437,7 +422,8 @@ export function VoiceRecognitionButton({
                       <button
                         key={verse.ayah.number}
                         onClick={() => handleSelectVerse(verse)}
-                        className="w-full p-3 rounded-lg border border-border hover:bg-secondary/50 text-left transition-colors"
+                        disabled={navigating}
+                        className="w-full p-3 rounded-lg border border-border hover:bg-secondary/50 text-left transition-colors disabled:opacity-50"
                       >
                         <p className="text-sm font-medium dir-rtl line-clamp-2 mb-1">
                           {verse.ayah.text}
