@@ -60,6 +60,124 @@ interface Lesson {
   completed?: boolean;
 }
 
+interface QuranicWord {
+  arabic: string;
+  transliteration: string;
+  english: string;
+  surah: string;
+  ayah: number;
+}
+
+interface DifficultWord {
+  arabic: string;
+  transliteration: string;
+  english: string;
+  meaning: string;
+  example: string;
+  surah: string;
+}
+
+const quranicWords: QuranicWord[] = [
+  { arabic: "السلام", transliteration: "As-Salaam", english: "Peace", surah: "Surah At-Taubah", ayah: 24 },
+  { arabic: "الحمد", transliteration: "Al-Hamd", english: "Praise", surah: "Surah Al-Fatihah", ayah: 2 },
+  { arabic: "نور", transliteration: "Noor", english: "Light", surah: "Surah An-Nur", ayah: 35 },
+  { arabic: "رزق", transliteration: "Rizq", english: "Provision/Sustenance", surah: "Surah An-Nahl", ayah: 73 },
+  { arabic: "يعمل", transliteration: "Ya'mal", english: "Works/Does", surah: "Surah Al-Baqarah", ayah: 110 },
+  { arabic: "بسم", transliteration: "Bismillah", english: "In the name of", surah: "Surah Al-Fatihah", ayah: 1 },
+  { arabic: "الله", transliteration: "Allah", english: "God", surah: "Surah Al-Fatihah", ayah: 1 },
+  { arabic: "رب", transliteration: "Rabb", english: "Lord/Master", surah: "Surah Al-Fatihah", ayah: 2 },
+  { arabic: "عمل", transliteration: "Amal", english: "Deed/Action", surah: "Surah At-Taubah", ayah: 105 },
+  { arabic: "علم", transliteration: "Ilm", english: "Knowledge", surah: "Surah Ta-Ha", ayah: 114 },
+  { arabic: "قلب", transliteration: "Qalb", english: "Heart", surah: "Surah Al-Hajj", ayah: 46 },
+  { arabic: "نفس", transliteration: "Nafs", english: "Soul/Self", surah: "Surah An-Naba", ayah: 40 },
+  { arabic: "دين", transliteration: "Deen", english: "Religion/Faith", surah: "Surah Al-Kafirun", ayah: 1 },
+  { arabic: "ايمان", transliteration: "Iman", english: "Faith/Belief", surah: "Surah Al-Baqarah", ayah: 285 },
+  { arabic: "صالح", transliteration: "Salih", english: "Good/Righteous", surah: "Surah Al-Baqarah", ayah: 62 },
+];
+
+const difficultWords: DifficultWord[] = [
+  { 
+    arabic: "يصِدُّون", 
+    transliteration: "Yasiddun", 
+    english: "They turn away/prevent", 
+    meaning: "To turn away, prevent, or obstruct from truth",
+    example: "Those who actively reject and turn people away from the path of Allah",
+    surah: "Surah Al-An'am"
+  },
+  { 
+    arabic: "تنزيل", 
+    transliteration: "Tanzil", 
+    english: "Revelation/Sending down", 
+    meaning: "The gradual revelation of the Quran, something sent down from heaven",
+    example: "Used to describe the Quran as a revelation from Allah",
+    surah: "Surah Ha-Meem"
+  },
+  { 
+    arabic: "استبرق", 
+    transliteration: "Istabraq", 
+    english: "Silk/Thick brocade", 
+    meaning: "A luxurious thick silk fabric, used to describe Paradise",
+    example: "The gardens of Paradise are adorned with silk garments",
+    surah: "Surah Al-Kahf"
+  },
+  { 
+    arabic: "الخنزير", 
+    transliteration: "Al-Khinzir", 
+    english: "Pig/Swine", 
+    meaning: "A forbidden animal in Islam, mentioned as haram (forbidden)",
+    example: "Pork and pig meat are haram (forbidden) in Islamic diet",
+    surah: "Surah Al-Baqarah"
+  },
+  { 
+    arabic: "إستفتاك", 
+    transliteration: "Istiftaka", 
+    english: "Ask you for a decision/judgment", 
+    meaning: "To seek guidance, ruling, or judgment on religious matters",
+    example: "People come to Prophet Muhammad seeking religious guidance",
+    surah: "Surah An-Nisa"
+  },
+  { 
+    arabic: "سجيل", 
+    transliteration: "Sajil", 
+    english: "Baked clay stones", 
+    meaning: "Hard stones or clay stones used as projectiles in battle",
+    example: "The elephant army was attacked with stones of clay",
+    surah: "Surah Al-Fil"
+  },
+  { 
+    arabic: "يستفتون", 
+    transliteration: "Yastaftun", 
+    english: "They ask for a decision/ruling", 
+    meaning: "To seek guidance, ruling, or Islamic judgment",
+    example: "The companions ask the Prophet for rulings on religious matters",
+    surah: "Surah An-Nisa"
+  },
+  { 
+    arabic: "الصراط", 
+    transliteration: "As-Sirat", 
+    english: "The Path/Way", 
+    meaning: "The straight path leading to Allah, also the bridge in the afterlife",
+    example: "Guide us to the straight path (as-Sirat al-Mustaqim)",
+    surah: "Surah Al-Fatihah"
+  },
+  { 
+    arabic: "ضيق", 
+    transliteration: "Dayiq", 
+    english: "Narrow/Tight/Distressed", 
+    meaning: "A state of narrowness, difficulty, or emotional distress",
+    example: "The chest becomes narrow when burdened with worry",
+    surah: "Surah Al-An'am"
+  },
+  { 
+    arabic: "الأرائك", 
+    transliteration: "Al-Ara'ik", 
+    english: "Couches/Thrones", 
+    meaning: "Luxurious couches or thrones described in Paradise",
+    example: "In Paradise, the believers will recline on magnificent couches",
+    surah: "Surah Ar-Rahman"
+  },
+];
+
 const letters: Letter[] = [
   {
     arabic: "ا",
