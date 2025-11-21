@@ -184,23 +184,30 @@ export default function MemoQuran() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Select Surah</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <Select value={selectedSurah.toString()} onValueChange={(val) => {
                   setSelectedSurah(parseInt(val));
                   setStartVerse(1);
                   setEndVerse(7);
                 }}>
-                  <SelectTrigger className="border-primary/50" data-testid="select-surah">
-                    <SelectValue />
+                  <SelectTrigger className="border-primary/50 h-10" data-testid="select-surah">
+                    <SelectValue placeholder="Choose a Surah" />
                   </SelectTrigger>
                   <SelectContent>
                     {surahs?.map((surah) => (
                       <SelectItem key={surah.number} value={surah.number.toString()}>
-                        {surah.number}. {surah.name}
+                        <span className="font-semibold">{surah.number}. {surah.name}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {currentSurah && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Selected Surah</p>
+                    <p className="text-base font-semibold">{currentSurah.number}. {currentSurah.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{currentSurah.numberOfAyahs} verses • {currentSurah.revelationType}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -291,15 +298,21 @@ export default function MemoQuran() {
 
             {verseRange.length > 0 && !isVersesLoading && (
               <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Current Verse {currentVerseIndex + 1}/{verseRange.length}</CardTitle>
+                <CardHeader className="pb-2 border-b">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm">Surah {currentSurah?.name} • Verse {currentVerseIndex + startVerse}/{endVerse}</CardTitle>
+                      <CardDescription className="text-xs mt-1">{verseRange[currentVerseIndex + 1] ? `Verse ${currentVerseIndex + 1}/${verseRange.length}` : 'Last verse'}</CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-3 pt-4">
                   {verseRange[currentVerseIndex] && (
-                    <div className="text-center space-y-2 bg-muted/50 p-3 rounded-md">
-                      <p className="font-arabic text-2xl leading-loose">{verseRange[currentVerseIndex].ayah?.text}</p>
-                      {verseRange[currentVerseIndex].urduTranslation && <p className="text-xs text-muted-foreground">{verseRange[currentVerseIndex].urduTranslation.text}</p>}
-                      {verseRange[currentVerseIndex].englishTranslation && <p className="text-xs text-muted-foreground">{verseRange[currentVerseIndex].englishTranslation.text}</p>}
+                    <div className="text-center space-y-3 bg-muted/50 p-4 rounded-md">
+                      <p className="font-arabic text-3xl leading-loose">{verseRange[currentVerseIndex].ayah?.text}</p>
+                      <p className="text-xs text-muted-foreground font-semibold">Ayah {currentVerseIndex + startVerse}</p>
+                      {verseRange[currentVerseIndex].urduTranslation && <p className="text-xs text-foreground/80 mt-2">{verseRange[currentVerseIndex].urduTranslation.text}</p>}
+                      {verseRange[currentVerseIndex].englishTranslation && <p className="text-xs text-foreground/70 mt-2">{verseRange[currentVerseIndex].englishTranslation.text}</p>}
                     </div>
                   )}
                 </CardContent>
