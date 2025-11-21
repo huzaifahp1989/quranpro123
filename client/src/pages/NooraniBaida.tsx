@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Volume2, BookOpen } from "lucide-react";
+import qaaidaPdf from "@assets/Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf";
 
 export default function NooraniBaida() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -59,14 +60,14 @@ export default function NooraniBaida() {
                 {/* PDF Viewer */}
                 <div className="w-full border rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 flex flex-col" style={{ height: 'calc(100vh - 300px)' }}>
                   <object
-                    data="Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf"
+                    data={qaaidaPdf}
                     type="application/pdf"
                     width="100%"
                     height="100%"
                     className="w-full flex-1"
                   >
                     <iframe
-                      src="Noorani-Qaida-in-English-e-Book-thequranclasses.online-2_1763749316011.pdf"
+                      src={qaaidaPdf}
                       width="100%"
                       height="100%"
                       style={{ border: 'none' }}
