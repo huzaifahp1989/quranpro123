@@ -17,46 +17,91 @@ interface VoiceRecognitionButtonProps {
   onNavigate: (surah: number, ayah: number) => void;
 }
 
-// Normalize Arabic text by removing diacritics
+// Remove all diacritics and normalize Arabic text
 function normalizeArabic(text: string): string {
-  // Remove all Arabic diacritics (tashkeel)
-  const diacritics = /[\u064B-\u0652\u0640]/g;
-  let normalized = text.replace(diacritics, '');
-  // Remove extra spaces
-  normalized = normalized.trim().replace(/\s+/g, ' ');
-  return normalized;
+  // Unicode range for Arabic diacritics
+  const diacritics = /[\u064B-\u0652\u0640\u061C\u200E\u200F]/g;
+  return text.replace(diacritics, '').trim();
 }
 
-// Calculate similarity score between two strings (0-1)
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = normalizeArabic(str1).toLowerCase();
-  const s2 = normalizeArabic(str2).toLowerCase();
-  
-  if (s1 === s2) return 1;
-  if (s1.length === 0 || s2.length === 0) return 0;
-  
-  // Check if one contains the other
-  if (s1.includes(s2) || s2.includes(s1)) {
-    const longer = Math.max(s1.length, s2.length);
-    const shorter = Math.min(s1.length, s2.length);
-    return shorter / longer;
+// Simple Levenshtein distance for fuzzy matching
+function levenshteinDistance(str1: string, str2: string): number {
+  const track = Array(str2.length + 1)
+    .fill(null)
+    .map(() => Array(str1.length + 1).fill(0));
+
+  for (let i = 0; i <= str1.length; i += 1) {
+    track[0][i] = i;
   }
-  
-  // Word-based matching
-  const words1 = s1.split(' ');
-  const words2 = s2.split(' ');
+  for (let j = 0; j <= str2.length; j += 1) {
+    track[j][0] = j;
+  }
+
+  for (let j = 1; j <= str2.length; j += 1) {
+    for (let i = 1; i <= str1.length; i += 1) {
+      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      track[j][i] = Math.min(
+        track[j][i - 1] + 1,
+        track[j - 1][i] + 1,
+        track[j - 1][i - 1] + indicator
+      );
+    }
+  }
+
+  return track[str2.length][str1.length];
+}
+
+// Calculate similarity score (0-1) using multiple strategies
+function calculateMatchScore(transcript: string, verseText: string): number {
+  const t = normalizeArabic(transcript);
+  const v = normalizeArabic(verseText);
+
+  if (!t || !v) return 0;
+
+  // Exact match
+  if (v.includes(t)) {
+    return 0.95;
+  }
+
+  // Inverse exact match - transcript contains verse start
+  if (t.includes(v.substring(0, Math.min(v.length, Math.ceil(v.length * 0.3))))) {
+    return 0.85;
+  }
+
+  // Check if verse contains most of transcript
+  const tWords = t.split(/\s+/);
+  const vWords = v.split(/\s+/);
   
   let matchedWords = 0;
-  for (const word1 of words1) {
-    for (const word2 of words2) {
-      if (word1 === word2 || (word1.length > 3 && word2.includes(word1)) || (word2.length > 3 && word1.includes(word2))) {
+  for (const tWord of tWords) {
+    if (tWord.length < 2) continue; // Skip very short words
+    for (const vWord of vWords) {
+      if (vWord.includes(tWord) || tWord.includes(vWord)) {
         matchedWords++;
         break;
       }
     }
   }
-  
-  return matchedWords / Math.max(words1.length, words2.length);
+
+  const wordMatchRatio = tWords.filter(w => w.length >= 2).length > 0 
+    ? matchedWords / tWords.filter(w => w.length >= 2).length 
+    : 0;
+
+  if (wordMatchRatio >= 0.6) {
+    return 0.7 + wordMatchRatio * 0.2;
+  }
+
+  // Levenshtein-based scoring for close matches
+  const maxLen = Math.max(t.length, v.length);
+  const distance = levenshteinDistance(t, v);
+  const similarity = Math.max(0, 1 - distance / maxLen);
+
+  // Only return score if it's reasonably high
+  if (similarity > 0.4 && t.length > 10) {
+    return similarity * 0.8;
+  }
+
+  return 0;
 }
 
 export function VoiceRecognitionButton({
@@ -69,23 +114,31 @@ export function VoiceRecognitionButton({
   const [isOpen, setIsOpen] = useState(false);
   const [matchedAyah, setMatchedAyah] = useState<any | null>(null);
   const [matchScore, setMatchScore] = useState(0);
+  const [debugInfo, setDebugInfo] = useState("");
 
   // Search for matching ayah when transcript changes and it's final
   useEffect(() => {
     if (transcript && !isListening && verses && verses.length > 0) {
       let bestMatch: any = null;
-      let bestScore = 0.3; // Minimum threshold for a match
+      let bestScore = 0;
       
       // Search through all verses for the best match
       for (const verse of verses) {
-        const score = calculateSimilarity(transcript, verse.ayah.text);
+        const score = calculateMatchScore(transcript, verse.ayah.text);
         if (score > bestScore) {
           bestScore = score;
           bestMatch = verse.ayah;
         }
       }
 
-      if (bestMatch) {
+      // Debug: log the matching process
+      console.log('Transcript:', transcript);
+      console.log('Best score:', bestScore);
+      console.log('Best match:', bestMatch?.text?.substring(0, 50));
+
+      setDebugInfo(`Searched ${verses.length} verses. Best match score: ${(bestScore * 100).toFixed(1)}%`);
+
+      if (bestScore > 0.35) {
         setMatchedAyah(bestMatch);
         setMatchScore(bestScore);
       } else {
@@ -101,6 +154,7 @@ export function VoiceRecognitionButton({
       setIsOpen(false);
       setMatchedAyah(null);
       setMatchScore(0);
+      setDebugInfo("");
     }
   };
 
@@ -115,6 +169,7 @@ export function VoiceRecognitionButton({
             setIsOpen(false);
           } else {
             setIsOpen(true);
+            setDebugInfo("");
             startListening();
           }
         }}
@@ -129,7 +184,7 @@ export function VoiceRecognitionButton({
           <DialogHeader>
             <DialogTitle>Recite the Quran</DialogTitle>
             <DialogDescription>
-              Recite the Quranic text you're looking for and we'll find the matching ayah
+              Recite any verse from the Quran and we'll find it for you
             </DialogDescription>
           </DialogHeader>
 
@@ -153,7 +208,7 @@ export function VoiceRecognitionButton({
               <p className="text-sm text-muted-foreground">
                 {isListening
                   ? "Speak clearly in Arabic for best results"
-                  : "Click the microphone button or say something"}
+                  : "Click the microphone to start reciting"}
               </p>
             </div>
 
@@ -161,7 +216,7 @@ export function VoiceRecognitionButton({
             {transcript && (
               <div className="p-4 rounded-lg bg-secondary/50 border border-border">
                 <p className="text-xs text-muted-foreground mb-2">Recognized:</p>
-                <p className="text-sm font-medium dir-rtl">{transcript}</p>
+                <p className="text-sm font-medium dir-rtl line-clamp-3">{transcript}</p>
               </div>
             )}
 
@@ -172,11 +227,18 @@ export function VoiceRecognitionButton({
               </div>
             )}
 
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                <p className="text-xs text-blue-700 dark:text-blue-400">{debugInfo}</p>
+              </div>
+            )}
+
             {/* Match Result */}
             {!isListening && matchedAyah && (
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
-                <p className="text-xs text-muted-foreground mb-2">Found (Confidence: {Math.round(matchScore * 100)}%):</p>
-                <p className="text-sm font-medium dir-rtl mb-3">{matchedAyah.text}</p>
+                <p className="text-xs text-muted-foreground mb-2">Found Match (Confidence: {Math.round(matchScore * 100)}%):</p>
+                <p className="text-sm font-medium dir-rtl mb-3 line-clamp-4">{matchedAyah.text}</p>
                 <p className="text-xs text-muted-foreground">
                   {matchedAyah.surah?.name || `Surah ${currentSurah}`} : {matchedAyah.numberInSurah}
                 </p>
@@ -186,8 +248,14 @@ export function VoiceRecognitionButton({
             {!isListening && !matchedAyah && transcript && (
               <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  No matching verse found. Try speaking the text again more clearly or try a different part of the verse.
+                  No matching verse found. Tips for better results:
                 </p>
+                <ul className="text-xs text-amber-700 dark:text-amber-400 mt-2 list-disc list-inside space-y-1">
+                  <li>Speak the verse clearly and slowly</li>
+                  <li>Make sure you're in the correct Surah</li>
+                  <li>Try reciting a longer portion of the verse</li>
+                  <li>Avoid background noise</li>
+                </ul>
               </div>
             )}
 
@@ -220,6 +288,7 @@ export function VoiceRecognitionButton({
                   stopListening();
                   setMatchedAyah(null);
                   setMatchScore(0);
+                  setDebugInfo("");
                 }}
                 className="flex-1"
                 data-testid="button-close-voice"
