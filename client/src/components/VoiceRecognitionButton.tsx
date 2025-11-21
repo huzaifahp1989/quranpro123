@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, X, Volume2 } from "lucide-react";
+import { Mic, X, Volume2, CheckCircle } from "lucide-react";
 import { useVoiceRecognition } from "@/hooks/use-voice-recognition";
 import { VerseWithTranslations } from "@shared/schema";
 import {
@@ -22,15 +22,11 @@ function normalizeArabic(text: string): string {
   return text.replace(/[\u064B-\u0652\u0640\u061C\u200E\u200F]/g, '').trim();
 }
 
-// Extract numbers from text (handles English numbers and Arabic-Indic numerals)
+// Extract numbers from text
 function extractNumbers(text: string): number[] {
-  // English numbers: 0-9
-  // Arabic-Indic numerals: ٠-٩
-  // Extended Arabic-Indic: ۰-۹
   const numberMatches = text.match(/[\d٠-٩۰-۹]+/g) || [];
   
   return numberMatches.map(match => {
-    // Convert Arabic-Indic numerals to English numbers
     return parseInt(
       match
         .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
@@ -114,6 +110,7 @@ export function VoiceRecognitionButton({
   const [matchScore, setMatchScore] = useState(0);
   const [suggestionType, setSuggestionType] = useState<"verse" | "number" | null>(null);
   const [suggestedAyah, setSuggestedAyah] = useState<number | null>(null);
+  const [navigating, setNavigating] = useState(false);
 
   // Auto-start listening when dialog opens
   useEffect(() => {
@@ -121,6 +118,26 @@ export function VoiceRecognitionButton({
       startListening();
     }
   }, [isOpen, isListening, startListening]);
+
+  // Auto-navigate when a match is found
+  useEffect(() => {
+    if (matchedVerse && !navigating && !isListening) {
+      // Small delay to ensure UI updates
+      const timer = setTimeout(() => {
+        setNavigating(true);
+        onNavigate(currentSurah, matchedVerse.ayah.numberInSurah);
+        
+        // Close dialog after navigation
+        setTimeout(() => {
+          setIsOpen(false);
+          resetState();
+          setNavigating(false);
+        }, 500);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [matchedVerse, isListening, navigating, currentSurah, onNavigate]);
 
   // Search for matching ayah when transcript changes
   useEffect(() => {
@@ -159,19 +176,12 @@ export function VoiceRecognitionButton({
     }
   }, [transcript, isListening, verses]);
 
-  const handleNavigate = () => {
-    if (matchedVerse) {
-      onNavigate(currentSurah, matchedVerse.ayah.numberInSurah);
-      setIsOpen(false);
-      resetState();
-    }
-  };
-
   const resetState = () => {
     setMatchedVerse(null);
     setMatchScore(0);
     setSuggestionType(null);
     setSuggestedAyah(null);
+    setNavigating(false);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -209,19 +219,27 @@ export function VoiceRecognitionButton({
               className={`p-6 rounded-lg border-2 transition-all ${
                 isListening
                   ? "border-primary bg-primary/5"
+                  : navigating
+                  ? "border-green-500 bg-green-500/5"
                   : "border-border bg-background"
               }`}
             >
               <div className="flex items-center gap-3 mb-3">
-                <Volume2
-                  className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
-                />
+                {navigating ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Volume2
+                    className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
+                  />
+                )}
                 <span className="font-medium">
-                  {isListening ? "Listening..." : "Ready"}
+                  {navigating ? "Going to verse..." : isListening ? "Listening..." : "Ready"}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {isListening
+                {navigating
+                  ? `Navigating to verse ${suggestedAyah}...`
+                  : isListening
                   ? "Say a verse number (e.g., 'verse 5') or recite Arabic text"
                   : "Click microphone to start listening"}
               </p>
@@ -243,7 +261,7 @@ export function VoiceRecognitionButton({
             )}
 
             {/* Match Result */}
-            {!isListening && matchedVerse && (
+            {matchedVerse && (
               <div className="p-4 rounded-lg bg-primary/10 border border-primary/30">
                 <p className="text-xs text-muted-foreground mb-2">
                   {suggestionType === "number" 
@@ -283,15 +301,6 @@ export function VoiceRecognitionButton({
                 >
                   <X className="w-4 h-4" />
                   Stop
-                </Button>
-              )}
-              {!isListening && matchedVerse && (
-                <Button
-                  onClick={handleNavigate}
-                  className="flex-1"
-                  data-testid="button-go-to-ayah"
-                >
-                  Go to Verse
                 </Button>
               )}
               {!isListening && !matchedVerse && transcript && (
