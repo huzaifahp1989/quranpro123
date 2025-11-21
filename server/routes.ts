@@ -176,6 +176,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search for an Ayah across all Surahs by Arabic text
+  app.post("/api/search-ayah", async (req, res) => {
+    try {
+      const { searchText } = req.body;
+      
+      if (!searchText || typeof searchText !== 'string' || searchText.trim().length < 2) {
+        return res.status(400).json({ error: "Search text must be at least 2 characters" });
+      }
+
+      // Check cache for the entire Quran
+      const cacheKey = "full-quran-uthmani";
+      let quranData = getFromCache(cacheKey);
+
+      if (!quranData) {
+        // Fetch entire Quran in Arabic
+        const response = await axios.get(`${ALQURAN_CLOUD_API}/quran/quran-uthmani`, { timeout: 30000 });
+        
+        if (response.data.code === 200 && response.data.data && response.data.data.surahs) {
+          quranData = response.data.data.surahs;
+          setCache(cacheKey, quranData);
+        } else {
+          return res.status(500).json({ error: "Failed to fetch Quran data" });
+        }
+      }
+
+      // Normalize Arabic function
+      const normalizeArabic = (text: string) => {
+        return text
+          .replace(/[\u064B-\u0652]/g, '') // Remove diacritics
+          .replace(/[\u0640\u061C\u200E\u200F]/g, '') // Remove special chars
+          .replace(/أ/g, 'ا') // Normalize hamza
+          .replace(/إ/g, 'ا')
+          .replace(/آ/g, 'ا')
+          .replace(/ة/g, 'ه') // Teh marbuta
+          .replace(/ى/g, 'ي') // Alef maksura
+          .replace(/\s+/g, ' ')
+          .trim();
+      };
+
+      const normalizedSearch = normalizeArabic(searchText);
+      let bestMatch: any = null;
+      let bestScore = 0;
+
+      // Search through all Surahs
+      for (const surah of quranData) {
+        for (const ayah of surah.ayahs) {
+          const normalizedAyah = normalizeArabic(ayah.text);
+          let score = 0;
+
+          // Exact substring match
+          if (normalizedAyah.includes(normalizedSearch)) {
+            score = 1.0;
+          }
+          // Starts with
+          else if (normalizedAyah.startsWith(normalizedSearch)) {
+            score = 0.95;
+          }
+          // Word-by-word matching
+          else {
+            const searchWords = normalizedSearch.split(/\s+/).filter((w: string) => w.length > 0);
+            const ayahWords = normalizedAyah.split(/\s+/).filter((w: string) => w.length > 0);
+            
+            if (searchWords.length > 0) {
+              let matchedWords = 0;
+              for (const sWord of searchWords) {
+                if (ayahWords.some((aWord: string) => aWord === sWord)) {
+                  matchedWords++;
+                }
+              }
+              score = (matchedWords / searchWords.length) * 0.85;
+            }
+          }
+
+          if (score > 0.5 && score > bestScore) {
+            bestScore = score;
+            bestMatch = {
+              surahNumber: surah.number,
+              ayahNumber: ayah.numberInSurah,
+              text: ayah.text,
+              surahName: surah.name,
+              surahEnglishName: surah.englishName,
+              score: score
+            };
+          }
+        }
+      }
+
+      if (bestMatch) {
+        res.json(bestMatch);
+      } else {
+        res.status(404).json({ error: "No matching Ayah found" });
+      }
+    } catch (error: any) {
+      console.error("Error searching Ayah:", error.message);
+      res.status(500).json({ error: "Failed to search Ayah" });
+    }
+  });
+
   // Get Hadiths from a collection
   app.get("/api/hadiths/:collection", async (req, res) => {
     try {

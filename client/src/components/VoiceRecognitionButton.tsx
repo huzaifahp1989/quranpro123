@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, X, Volume2, CheckCircle, Search } from "lucide-react";
+import { Mic, X, Volume2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useVoiceRecognition } from "@/hooks/use-voice-recognition";
 import { VerseWithTranslations, Surah } from "@shared/schema";
@@ -45,126 +45,6 @@ function normalizeArabic(text: string): string {
     .trim();
 }
 
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= str2.length; i++) {
-    matrix[i] = [i];
-  }
-
-  for (let j = 0; j <= str1.length; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
-      }
-    }
-  }
-
-  return matrix[str2.length][str1.length];
-}
-
-function stringSimilarity(str1: string, str2: string): number {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-  
-  if (longer.length === 0) return 1.0;
-  
-  const editDistance = levenshteinDistance(longer, shorter);
-  return (longer.length - editDistance) / longer.length;
-}
-
-function findArabicVerseMatch(
-  transcript: string,
-  verses: VerseWithTranslations[]
-): { verse: VerseWithTranslations; score: number } | null {
-  const normalizedTranscript = normalizeArabic(transcript);
-  
-  if (normalizedTranscript.length < 2) {
-    return null;
-  }
-
-  let bestMatch: { verse: VerseWithTranslations; score: number } | null = null;
-
-  for (const verse of verses) {
-    const normalizedVerse = normalizeArabic(verse.ayah.text);
-    let score = 0;
-
-    if (normalizedVerse.includes(normalizedTranscript)) {
-      score = 1.0;
-    }
-    else if (normalizedVerse.startsWith(normalizedTranscript)) {
-      score = 0.95;
-    }
-    else if (normalizedVerse.substring(0, Math.ceil(normalizedVerse.length * 0.7)).includes(normalizedTranscript)) {
-      score = 0.90;
-    }
-    else {
-      const transcriptWords = normalizedTranscript
-        .split(/\s+/)
-        .filter(w => w.length > 0);
-      
-      const verseWords = normalizedVerse
-        .split(/\s+/)
-        .filter(w => w.length > 0);
-      
-      if (transcriptWords.length === 0) continue;
-
-      let matchedWords = 0;
-      let totalSimilarity = 0;
-
-      for (let i = 0; i < transcriptWords.length; i++) {
-        const tWord = transcriptWords[i];
-        let bestWordScore = 0;
-
-        for (let j = 0; j < verseWords.length; j++) {
-          const vWord = verseWords[j];
-          
-          if (vWord === tWord) {
-            bestWordScore = 1.0;
-            break;
-          }
-          else if (tWord.length > 1 && vWord.length > 1) {
-            const similarity = stringSimilarity(tWord, vWord);
-            if (similarity > bestWordScore) {
-              bestWordScore = similarity;
-            }
-          }
-        }
-
-        if (bestWordScore > 0.6) {
-          matchedWords++;
-          totalSimilarity += bestWordScore;
-        }
-      }
-
-      if (matchedWords > 0) {
-        score = (totalSimilarity / transcriptWords.length) * 0.85;
-      }
-    }
-
-    if (score > 0.5 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { verse, score };
-    }
-  }
-  
-  return bestMatch;
-}
-
-function findSurahByNumber(number: number, surahs: Surah[] | undefined): Surah | undefined {
-  if (!surahs) return undefined;
-  return surahs.find(s => s.number === number);
-}
-
 export function VoiceRecognitionButton({
   verses,
   surahs,
@@ -174,13 +54,15 @@ export function VoiceRecognitionButton({
   const { isListening, transcript, error, startListening, stopListening } =
     useVoiceRecognition();
   const [isOpen, setIsOpen] = useState(false);
-  const [navigating, setNavigating] = useState(false);
   const [matchedVerseText, setMatchedVerseText] = useState<string>("");
   const [matchScore, setMatchScore] = useState(0);
+  const [matchedSurah, setMatchedSurah] = useState<number | null>(null);
+  const [matchedAyah, setMatchedAyah] = useState<number | null>(null);
   const [lastProcessedTranscript, setLastProcessedTranscript] = useState("");
   const [textSearchInput, setTextSearchInput] = useState("");
   const [textSearchResults, setTextSearchResults] = useState<VerseWithTranslations[]>([]);
   const [activeTab, setActiveTab] = useState("voice");
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (isOpen && !isListening && activeTab === "voice") {
@@ -188,61 +70,99 @@ export function VoiceRecognitionButton({
     }
   }, [isOpen, isListening, startListening, activeTab]);
 
+  // Process transcript when received
   useEffect(() => {
     if (!transcript || transcript === lastProcessedTranscript || isListening) {
       return;
     }
 
+    console.log("\n=== PROCESSING TRANSCRIPT ===");
+    console.log("Raw transcript:", transcript);
     setLastProcessedTranscript(transcript);
 
+    // Try extracting numbers first (Surah navigation)
     const numbers = extractNumbers(transcript);
     
     if (numbers.length > 0) {
       const firstNum = numbers[0];
       
       if (firstNum >= 1 && firstNum <= 114) {
+        console.log(`✅ Detected Surah number: ${firstNum}`);
         const secondNum = numbers.length > 1 ? numbers[1] : 1;
-        setNavigating(true);
         setMatchedVerseText(`Surah ${firstNum}${secondNum > 1 ? `, Verse ${secondNum}` : ""}`);
         setMatchScore(1.0);
+        setMatchedSurah(firstNum);
+        setMatchedAyah(secondNum);
         
+        console.log(`🚀 NAVIGATING TO: Surah ${firstNum}, Verse ${secondNum}`);
         onNavigate(firstNum, Math.max(1, secondNum));
         
         setTimeout(() => {
           setIsOpen(false);
-          setNavigating(false);
           setMatchedVerseText("");
           setMatchScore(0);
+          setMatchedSurah(null);
+          setMatchedAyah(null);
           setLastProcessedTranscript("");
-        }, 2000);
+        }, 500);
         return;
       }
     }
 
-    if (verses && verses.length > 0) {
-      const match = findArabicVerseMatch(transcript, verses);
-      
-      if (match && match.score > 0.5) {
-        setNavigating(true);
-        setMatchedVerseText(match.verse.ayah.text);
-        setMatchScore(match.score);
-        
-        onNavigate(currentSurah, match.verse.ayah.numberInSurah);
-        
-        setTimeout(() => {
-          setIsOpen(false);
-          setNavigating(false);
-          setMatchedVerseText("");
-          setMatchScore(0);
-          setLastProcessedTranscript("");
-        }, 2000);
-        return;
-      }
-    }
+    // Call global search API
+    const searchGlobal = async () => {
+      setIsSearching(true);
+      try {
+        console.log(`🔍 Searching globally for: ${transcript}`);
+        const response = await fetch("/api/search-ayah", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ searchText: transcript })
+        });
 
-    setMatchedVerseText("");
-    setMatchScore(0);
-  }, [transcript, isListening, verses, currentSurah, lastProcessedTranscript, onNavigate]);
+        if (response.ok) {
+          const data: {
+            surahNumber: number;
+            ayahNumber: number;
+            text: string;
+            surahName: string;
+            surahEnglishName: string;
+            score: number;
+          } = await response.json();
+
+          console.log(`✅ FOUND MATCH - Surah ${data.surahNumber}, Verse ${data.ayahNumber} with score ${data.score.toFixed(2)}`);
+          setMatchedVerseText(data.text);
+          setMatchScore(data.score);
+          setMatchedSurah(data.surahNumber);
+          setMatchedAyah(data.ayahNumber);
+          
+          console.log(`🚀 NAVIGATING TO: Surah ${data.surahNumber}, Verse ${data.ayahNumber}`);
+          onNavigate(data.surahNumber, data.ayahNumber);
+          
+          setTimeout(() => {
+            setIsOpen(false);
+            setMatchedVerseText("");
+            setMatchScore(0);
+            setMatchedSurah(null);
+            setMatchedAyah(null);
+            setLastProcessedTranscript("");
+          }, 500);
+        } else {
+          console.log("❌ No match found");
+        }
+      } catch (error: any) {
+        console.log("❌ Error searching:", error);
+        setMatchedVerseText("");
+        setMatchScore(0);
+        setMatchedSurah(null);
+        setMatchedAyah(null);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    searchGlobal();
+  }, [transcript, isListening, lastProcessedTranscript, onNavigate]);
 
   const handleTextSearch = (value: string) => {
     setTextSearchInput(value);
@@ -261,20 +181,23 @@ export function VoiceRecognitionButton({
   };
 
   const handleSelectVerse = (verse: VerseWithTranslations) => {
-    setNavigating(true);
     setMatchedVerseText(verse.ayah.text);
     setMatchScore(1.0);
+    setMatchedSurah(currentSurah);
+    setMatchedAyah(verse.ayah.numberInSurah);
     
+    console.log(`🚀 NAVIGATING TO: Surah ${currentSurah}, Verse ${verse.ayah.numberInSurah}`);
     onNavigate(currentSurah, verse.ayah.numberInSurah);
     
     setTimeout(() => {
       setIsOpen(false);
-      setNavigating(false);
       setMatchedVerseText("");
       setMatchScore(0);
+      setMatchedSurah(null);
+      setMatchedAyah(null);
       setTextSearchInput("");
       setTextSearchResults([]);
-    }, 2000);
+    }, 500);
   };
 
   const handleDialogOpenChange = (open: boolean) => {
@@ -283,14 +206,16 @@ export function VoiceRecognitionButton({
       stopListening();
       setMatchedVerseText("");
       setMatchScore(0);
+      setMatchedSurah(null);
+      setMatchedAyah(null);
       setLastProcessedTranscript("");
       setTextSearchInput("");
       setTextSearchResults([]);
-      setNavigating(false);
+      setIsSearching(false);
     }
   };
 
-  const surahName = surahs?.find(s => s.number === currentSurah)?.englishName || "";
+  const surahName = matchedSurah && surahs ? surahs.find(s => s.number === matchedSurah)?.englishName : "";
 
   return (
     <>
@@ -301,7 +226,7 @@ export function VoiceRecognitionButton({
         data-testid="button-voice-recognition"
         title="Voice search"
       >
-        <Mic className={`w-4 h-4 ${isListening || navigating ? "animate-pulse" : ""}`} />
+        <Mic className={`w-4 h-4 ${isListening ? "animate-pulse" : ""}`} />
       </Button>
 
       <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
@@ -309,11 +234,11 @@ export function VoiceRecognitionButton({
           <DialogHeader>
             <DialogTitle>Search Ayah</DialogTitle>
             <DialogDescription>
-              Say Surah number or recite an Ayah
+              Say Surah number or recite any Ayah from any Surah
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" disabled={navigating}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="voice">Voice</TabsTrigger>
               <TabsTrigger value="search">Text Search</TabsTrigger>
@@ -322,32 +247,37 @@ export function VoiceRecognitionButton({
             <TabsContent value="voice" className="space-y-4">
               <div
                 className={`p-6 rounded-lg border-2 transition-all ${
-                  navigating
-                    ? "border-green-500 bg-green-500/5"
+                  isSearching
+                    ? "border-primary bg-primary/5"
                     : isListening
                     ? "border-primary bg-primary/5"
                     : "border-border bg-background"
                 }`}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  {navigating ? (
-                    <CheckCircle className="w-5 h-5 text-green-500 animate-pulse" />
+                  {isSearching ? (
+                    <Volume2 className="w-5 h-5 animate-pulse text-primary" />
                   ) : (
                     <Volume2
                       className={`w-5 h-5 ${isListening ? "animate-pulse text-primary" : ""}`}
                     />
                   )}
                   <span className="font-medium">
-                    {navigating 
-                      ? "Navigating to verse..." 
+                    {isSearching 
+                      ? "Searching..." 
                       : isListening 
                       ? "Listening..." 
                       : "Ready"}
                   </span>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  {isSearching
+                    ? "Searching across all 114 Surahs..."
+                    : "Say Surah number or recite any Ayah"}
+                </p>
               </div>
 
-              {transcript && !navigating && (
+              {transcript && (
                 <div className="p-4 rounded-lg bg-secondary/50 border border-border">
                   <p className="text-xs text-muted-foreground mb-2">Recognized:</p>
                   <p className="text-sm font-medium line-clamp-3 dir-rtl">{transcript}</p>
@@ -360,17 +290,20 @@ export function VoiceRecognitionButton({
                 </div>
               )}
 
-              {matchedVerseText && navigating && (
+              {matchedVerseText && matchedSurah && matchedAyah && (
                 <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <p className="text-xs text-muted-foreground mb-2">Found ({Math.round(matchScore * 100)}%):</p>
-                  <p className="text-sm font-medium dir-rtl mb-2 line-clamp-2">
+                  <p className="text-sm font-medium dir-rtl mb-3 line-clamp-3">
                     {matchedVerseText}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Surah {matchedSurah}{surahName ? ` (${surahName})` : ""}, Verse {matchedAyah}
                   </p>
                 </div>
               )}
 
               <div className="flex gap-2">
-                {isListening && !navigating && (
+                {isListening && (
                   <Button
                     variant="destructive"
                     onClick={stopListening}
@@ -380,7 +313,7 @@ export function VoiceRecognitionButton({
                     Stop
                   </Button>
                 )}
-                {!isListening && !navigating && !matchedVerseText && transcript && (
+                {!isListening && !matchedVerseText && transcript && !isSearching && (
                   <Button
                     onClick={() => {
                       setLastProcessedTranscript("");
@@ -395,7 +328,6 @@ export function VoiceRecognitionButton({
                   variant="outline"
                   onClick={() => handleDialogOpenChange(false)}
                   className="flex-1"
-                  disabled={navigating}
                 >
                   Close
                 </Button>
@@ -412,7 +344,6 @@ export function VoiceRecognitionButton({
                     onChange={(e) => handleTextSearch(e.target.value)}
                     className="pl-10"
                     dir="rtl"
-                    disabled={navigating}
                   />
                 </div>
 
@@ -422,8 +353,7 @@ export function VoiceRecognitionButton({
                       <button
                         key={verse.ayah.number}
                         onClick={() => handleSelectVerse(verse)}
-                        disabled={navigating}
-                        className="w-full p-3 rounded-lg border border-border hover:bg-secondary/50 text-left transition-colors disabled:opacity-50"
+                        className="w-full p-3 rounded-lg border border-border hover:bg-secondary/50 text-left transition-colors"
                       >
                         <p className="text-sm font-medium dir-rtl line-clamp-2 mb-1">
                           {verse.ayah.text}
