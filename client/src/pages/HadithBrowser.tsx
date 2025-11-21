@@ -92,29 +92,38 @@ export default function HadithBrowser() {
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">Authentic Traditions of Prophet Muhammad ﷺ</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
+              <Link href="/stories">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-nav-stories"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Stories"
+                >
+                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </Link>
               <Link href="/kids">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   data-testid="button-nav-kids"
-                  className="gap-1 sm:gap-2 h-8 sm:h-9"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Kids"
                 >
                   <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden md:inline">Kids Learning</span>
-                  <span className="md:hidden text-xs">Kids</span>
                 </Button>
               </Link>
               <Link href="/">
                 <Button
                   variant="outline"
-                  size="sm"
-                  data-testid="button-back-to-quran"
-                  className="gap-1 sm:gap-2 h-8 sm:h-9"
+                  size="icon"
+                  data-testid="button-nav-quran"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Quran"
                 >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="hidden md:inline">Read Quran</span>
-                  <span className="md:hidden text-xs">Quran</span>
+                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </Button>
               </Link>
             </div>

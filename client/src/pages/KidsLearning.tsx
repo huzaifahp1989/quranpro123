@@ -196,13 +196,24 @@ export default function KidsLearning() {
                 <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Listen, Learn, and Repeat</p>
               </div>
             </div>
-            <Link href="/">
-              <Button variant="outline" size="sm" data-testid="button-back-home" className="gap-1 sm:gap-2 h-8 sm:h-9 shrink-0">
-                <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline text-xs sm:text-sm">Back to Quran</span>
-                <span className="sm:hidden text-xs">Quran</span>
-              </Button>
-            </Link>
+            <div className="flex items-center gap-1 shrink-0">
+              <Link href="/stories">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  data-testid="button-nav-stories"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
+                  title="Stories"
+                >
+                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" size="icon" data-testid="button-nav-quran" className="h-8 w-8 sm:h-9 sm:w-9" title="Quran">
+                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </header>
