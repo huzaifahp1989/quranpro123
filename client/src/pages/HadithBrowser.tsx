@@ -73,6 +73,7 @@ export default function HadithBrowser() {
     { name: "ibnmajah", englishName: "Sunan Ibn Majah", numberOfHadiths: 4341 },
     { name: "nasai", englishName: "Sunan an-Nasa'i", numberOfHadiths: 5758 },
     { name: "malik", englishName: "Muwatta Malik", numberOfHadiths: 1826 },
+    { name: "riyadussaliheen", englishName: "Riyadus Saliheen", numberOfHadiths: 1896 },
   ];
 
   const handleLoadMore = () => {
