@@ -239,85 +239,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search text must be at least 2 characters" });
       }
 
-      // Normalize Arabic function
+      // Normalize Arabic function - enhanced for speech recognition
       const normalizeArabic = (text: string) => {
         return text
-          .replace(/[\u064B-\u0652]/g, '') // Remove diacritics
-          .replace(/[\u0640\u061C\u200E\u200F]/g, '') // Remove special chars
-          .replace(/أ/g, 'ا') // Normalize hamza
+          .replace(/[\u064B-\u0652]/g, '') // Remove diacritics (tashkeel)
+          .replace(/[\u0640\u061C\u200E\u200F]/g, '') // Remove tatweel, directional marks
+          .replace(/[ًٌٍَُِّْ]/g, '') // Remove all harakat
+          .replace(/أ/g, 'ا') // Normalize hamza variations
           .replace(/إ/g, 'ا')
           .replace(/آ/g, 'ا')
-          .replace(/ة/g, 'ه') // Teh marbuta
-          .replace(/ى/g, 'ي') // Alef maksura
-          .replace(/\s+/g, ' ')
+          .replace(/ٱ/g, 'ا') // Alef wasla
+          .replace(/ة/g, 'ه') // Teh marbuta to heh
+          .replace(/ى/g, 'ي') // Alef maksura to yeh
+          .replace(/ئ/g, 'ي') // Hamza on yeh
+          .replace(/ؤ/g, 'و') // Hamza on waw
+          .replace(/ء/g, '') // Remove standalone hamza
+          .replace(/\s+/g, ' ') // Normalize spaces
           .trim();
       };
 
       const normalizedSearch = normalizeArabic(searchText);
+      const searchWords = normalizedSearch.split(/\s+/).filter((w: string) => w.length > 1);
+      
       let bestMatch: any = null;
       let bestScore = 0;
 
-      // Search through all 114 Surahs
-      const editions = `quran-uthmani,ur.jalandhry,en.sahih`;
+      // Search through pre-loaded Surahs (instant!)
       for (let surahNumber = 1; surahNumber <= 114; surahNumber++) {
-        const cacheKey = `surah-${surahNumber}-quran-uthmani`;
-        let surahData = getFromCache(cacheKey);
+        const cacheKey = `surah-${surahNumber}-text`;
+        const surahData = getFromCache(cacheKey);
 
-        // If not cached, fetch it
-        if (!surahData) {
-          try {
-            const response = await axios.get(
-              `${ALQURAN_CLOUD_API}/surah/${surahNumber}/editions/quran-uthmani`,
-              { timeout: 10000 }
-            );
-            
-            if (response.data.code === 200 && response.data.data) {
-              surahData = response.data.data.ayahs;
-              setCache(cacheKey, surahData);
-            } else {
-              continue; // Skip if fetch fails
-            }
-          } catch (err) {
-            continue; // Skip if fetch fails
-          }
-        }
-
-        // Search through ayahs
-        if (surahData && Array.isArray(surahData)) {
-          for (const ayah of surahData) {
+        // Use pre-loaded data if available
+        if (surahData && surahData.ayahs && Array.isArray(surahData.ayahs)) {
+          for (const ayah of surahData.ayahs) {
             const normalizedAyah = normalizeArabic(ayah.text);
             let score = 0;
 
-            // Exact substring match
-            if (normalizedAyah.includes(normalizedSearch)) {
+            // 1. Exact match
+            if (normalizedAyah === normalizedSearch) {
               score = 1.0;
             }
-            // Starts with
-            else if (normalizedAyah.startsWith(normalizedSearch)) {
+            // 2. Contains full search text
+            else if (normalizedAyah.includes(normalizedSearch)) {
               score = 0.95;
             }
-            // Word-by-word matching
-            else {
-              const searchWords = normalizedSearch.split(/\s+/).filter((w: string) => w.length > 0);
-              const ayahWords = normalizedAyah.split(/\s+/).filter((w: string) => w.length > 0);
+            // 3. Starts with search text
+            else if (normalizedAyah.startsWith(normalizedSearch)) {
+              score = 0.9;
+            }
+            // 4. Word-by-word fuzzy matching (handles speech recognition errors)
+            else if (searchWords.length > 0) {
+              const ayahWords = normalizedAyah.split(/\s+/);
+              let matchedWords = 0;
+              let partialMatches = 0;
               
-              if (searchWords.length > 0) {
-                let matchedWords = 0;
-                for (const sWord of searchWords) {
-                  if (ayahWords.some((aWord: string) => aWord === sWord)) {
-                    matchedWords++;
-                  }
+              for (const searchWord of searchWords) {
+                // Exact word match
+                if (ayahWords.includes(searchWord)) {
+                  matchedWords++;
                 }
-                score = (matchedWords / searchWords.length) * 0.85;
+                // Partial match (word starts with or contains)
+                else if (ayahWords.some((aw: string) => 
+                  aw.startsWith(searchWord) || 
+                  searchWord.startsWith(aw) ||
+                  aw.includes(searchWord)
+                )) {
+                  partialMatches++;
+                }
               }
+              
+              const exactRatio = matchedWords / searchWords.length;
+              const partialRatio = partialMatches / searchWords.length;
+              score = (exactRatio * 0.8) + (partialRatio * 0.4);
             }
 
-            if (score > 0.5 && score > bestScore) {
+            // Update best match if this score is higher
+            if (score > 0.4 && score > bestScore) {
               bestScore = score;
               bestMatch = {
-                surahNumber: surahNumber,
+                surahNumber: surahData.number,
                 ayahNumber: ayah.numberInSurah,
                 text: ayah.text,
+                surahName: surahData.name,
+                surahEnglishName: surahData.englishName,
                 score: score
               };
             }
@@ -326,8 +330,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (bestMatch) {
+        console.log(`✅ Voice Search Match: Surah ${bestMatch.surahNumber}:${bestMatch.ayahNumber} (score: ${bestMatch.score.toFixed(2)})`);
         res.json(bestMatch);
       } else {
+        console.log(`❌ Voice Search: No match for "${searchText}"`);
         res.status(404).json({ error: "No matching Ayah found" });
       }
     } catch (error: any) {
