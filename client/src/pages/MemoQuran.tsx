@@ -131,8 +131,8 @@ export default function MemoQuran() {
     if (audioMode === 'recitation') {
       audioUrl = verse?.ayah?.audio;
     } else {
-      // Use English translation audio if available
-      audioUrl = verse?.englishTranslation?.audio;
+      // Translation audio not available, use recitation instead
+      audioUrl = verse?.ayah?.audio;
     }
     
     if (audioUrl && audioRef.current) {
