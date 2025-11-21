@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Surah, VerseWithTranslations, availableReciters } from "@shared/schema";
+import { Surah, VerseWithTranslations, availableReciters, allJuz } from "@shared/schema";
 
 export default function MemoQuran() {
+  const [mode, setMode] = useState<'surah' | 'juz'>('surah');
   const [selectedSurah, setSelectedSurah] = useState(1);
+  const [selectedJuz, setSelectedJuz] = useState(1);
   const [startVerse, setStartVerse] = useState(1);
   const [endVerse, setEndVerse] = useState(7);
   const [selectedReciter, setSelectedReciter] = useState(availableReciters[0].identifier);
@@ -21,6 +23,17 @@ export default function MemoQuran() {
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [mainTab, setMainTab] = useState('lesson');
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Handle Juz selection
+  const handleJuzChange = (juzNumber: number) => {
+    const juz = allJuz.find(j => j.number === juzNumber);
+    if (juz) {
+      setSelectedJuz(juzNumber);
+      setSelectedSurah(juz.startSurah);
+      setStartVerse(juz.startAyah);
+      setEndVerse(Math.min(juz.endAyah, 286)); // Max verses in any surah
+    }
+  };
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -158,6 +171,32 @@ export default function MemoQuran() {
           </TabsList>
 
           <TabsContent value="lesson" className="space-y-4">
+            {/* Mode Toggle */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant={mode === 'surah' ? 'default' : 'outline'}
+                    onClick={() => setMode('surah')}
+                    className="flex-1"
+                    data-testid="btn-mode-surah"
+                  >
+                    Surah Mode
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={mode === 'juz' ? 'default' : 'outline'}
+                    onClick={() => setMode('juz')}
+                    className="flex-1"
+                    data-testid="btn-mode-juz"
+                  >
+                    Juz Mode
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Reciter Selection */}
             <Card>
               <CardHeader className="pb-3">
@@ -179,37 +218,67 @@ export default function MemoQuran() {
               </CardContent>
             </Card>
 
-            {/* Surah Selection */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Select Surah</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Select value={selectedSurah.toString()} onValueChange={(val) => {
-                  setSelectedSurah(parseInt(val));
-                  setStartVerse(1);
-                  setEndVerse(7);
-                }}>
-                  <SelectTrigger className="border-primary/50 h-10" data-testid="select-surah">
-                    <SelectValue placeholder="Choose a Surah" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {surahs?.map((surah) => (
-                      <SelectItem key={surah.number} value={surah.number.toString()}>
-                        <span className="font-semibold">{surah.number}. {surah.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {currentSurah && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Selected Surah</p>
-                    <p className="text-base font-semibold">{currentSurah.number}. {currentSurah.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{currentSurah.numberOfAyahs} verses • {currentSurah.revelationType}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Surah or Juz Selection */}
+            {mode === 'surah' ? (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Select Surah</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Select value={selectedSurah.toString()} onValueChange={(val) => {
+                    setSelectedSurah(parseInt(val));
+                    setStartVerse(1);
+                    setEndVerse(7);
+                  }}>
+                    <SelectTrigger className="border-primary/50 h-10" data-testid="select-surah">
+                      <SelectValue placeholder="Choose a Surah" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {surahs?.map((surah) => (
+                        <SelectItem key={surah.number} value={surah.number.toString()}>
+                          <span className="font-semibold">{surah.number}. {surah.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {currentSurah && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Selected Surah</p>
+                      <p className="text-base font-semibold">{currentSurah.number}. {currentSurah.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{currentSurah.numberOfAyahs} verses • {currentSurah.revelationType}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Select Juz (Para)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Select value={selectedJuz.toString()} onValueChange={(val) => handleJuzChange(parseInt(val))}>
+                    <SelectTrigger className="border-primary/50 h-10" data-testid="select-juz">
+                      <SelectValue placeholder="Choose a Juz" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allJuz.map((juz) => (
+                        <SelectItem key={juz.number} value={juz.number.toString()}>
+                          <span className="font-semibold">Juz {juz.number}: {juz.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {allJuz[selectedJuz - 1] && (
+                    <div className="bg-primary/10 border border-primary/20 rounded-md p-3 text-center">
+                      <p className="text-xs text-muted-foreground mb-1">Selected Juz</p>
+                      <p className="text-base font-semibold">Juz {selectedJuz}: {allJuz[selectedJuz - 1].name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Surah {allJuz[selectedJuz - 1].startSurah} - {allJuz[selectedJuz - 1].endSurah}</p>
+                      {allJuz[selectedJuz - 1].arabicName && <p className="text-xs font-arabic mt-1">{allJuz[selectedJuz - 1].arabicName}</p>}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Verse Range Selection */}
             <Card>

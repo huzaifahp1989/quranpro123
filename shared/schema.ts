@@ -66,6 +66,53 @@ export const reciterSchema = z.object({
 
 export type Reciter = z.infer<typeof reciterSchema>;
 
+// Juz (Para) Schema
+export const juzSchema = z.object({
+  number: z.number(),
+  name: z.string(),
+  startSurah: z.number(),
+  startAyah: z.number(),
+  endSurah: z.number(),
+  endAyah: z.number(),
+  arabicName: z.string().optional(),
+});
+
+export type Juz = z.infer<typeof juzSchema>;
+
+// All 30 Juz with their details
+export const allJuz: Juz[] = [
+  { number: 1, name: "Alif Laam Meem", startSurah: 1, startAyah: 1, endSurah: 2, endAyah: 141, arabicName: "الف لام ميم" },
+  { number: 2, name: "Sayqul", startSurah: 2, startAyah: 142, endSurah: 2, endAyah: 252, arabicName: "سيقول" },
+  { number: 3, name: "Tilka Ar-Rusul", startSurah: 2, startAyah: 253, endSurah: 3, endAyah: 91, arabicName: "تلك الرسل" },
+  { number: 4, name: "Li-l-Ilah", startSurah: 3, startAyah: 92, endSurah: 4, endAyah: 23, arabicName: "للّه" },
+  { number: 5, name: "Al-Ma'ida", startSurah: 4, startAyah: 24, endSurah: 4, endAyah: 147, arabicName: "المائدة" },
+  { number: 6, name: "La Yanhu", startSurah: 4, startAyah: 148, endSurah: 5, endAyah: 81, arabicName: "لا ينهاكم" },
+  { number: 7, name: "Wa Idha Samiu", startSurah: 5, startAyah: 82, endSurah: 6, endAyah: 110, arabicName: "وإذا سمعوا" },
+  { number: 8, name: "Wa Lu Inna", startSurah: 6, startAyah: 111, endSurah: 7, endAyah: 87, arabicName: "ولو أنّا" },
+  { number: 9, name: "Qalat Al-A'raf", startSurah: 7, startAyah: 88, endSurah: 8, endAyah: 40, arabicName: "قالت الأعراف" },
+  { number: 10, name: "Wa A'lamu", startSurah: 8, startAyah: 41, endSurah: 9, endAyah: 92, arabicName: "واعلموا" },
+  { number: 11, name: "Ya'tazerun", startSurah: 9, startAyah: 93, endSurah: 11, endAyah: 5, arabicName: "يعتذرون" },
+  { number: 12, name: "Wa Ma Min Dabbah", startSurah: 11, startAyah: 6, endSurah: 12, endAyah: 52, arabicName: "وما من دابة" },
+  { number: 13, name: "Wa Ishtihat", startSurah: 12, startAyah: 53, endSurah: 14, endAyah: 52, arabicName: "واشتعل" },
+  { number: 14, name: "Rubama", startSurah: 15, startAyah: 1, endSurah: 16, endAyah: 128, arabicName: "ربما" },
+  { number: 15, name: "Subhana", startSurah: 17, startAyah: 1, endSurah: 18, endAyah: 74, arabicName: "سبحان" },
+  { number: 16, name: "Qala Alama", startSurah: 18, startAyah: 75, endSurah: 20, endAyah: 135, arabicName: "قالَ ألم" },
+  { number: 17, name: "Aqtarabu", startSurah: 21, startAyah: 1, endSurah: 22, endAyah: 78, arabicName: "اقتربَ" },
+  { number: 18, name: "Wa Man Yadlil", startSurah: 23, startAyah: 1, endSurah: 25, endAyah: 20, arabicName: "ومن يضلل" },
+  { number: 19, name: "Wa Qala Al-Ladhina", startSurah: 25, startAyah: 21, endSurah: 27, endAyah: 55, arabicName: "وقالَ الذين" },
+  { number: 20, name: "Amma Yastafikkun", startSurah: 27, startAyah: 56, endSurah: 29, endAyah: 45, arabicName: "آمّا يستفكّون" },
+  { number: 21, name: "A'man Yastajeebu", startSurah: 29, startAyah: 46, endSurah: 33, endAyah: 30, arabicName: "أمّن يستجيب" },
+  { number: 22, name: "Wa Ma Li", startSurah: 33, startAyah: 31, endSurah: 36, endAyah: 27, arabicName: "وما لي" },
+  { number: 23, name: "Ha Meem", startSurah: 36, startAyah: 28, endSurah: 39, endAyah: 31, arabicName: "حاميم" },
+  { number: 24, name: "Fa Taalallah", startSurah: 39, startAyah: 32, endSurah: 41, endAyah: 46, arabicName: "فتعالَ الله" },
+  { number: 25, name: "Ilayhi Yurjau", startSurah: 41, startAyah: 47, endSurah: 45, endAyah: 37, arabicName: "إليه يُرجع" },
+  { number: 26, name: "Ha Meem As-Sajdah", startSurah: 46, startAyah: 1, endSurah: 51, endAyah: 30, arabicName: "حاميم السجدة" },
+  { number: 27, name: "Qala Fa-Inna", startSurah: 51, startAyah: 31, endSurah: 57, endAyah: 29, arabicName: "قالَ فَإِنّ" },
+  { number: 28, name: "Qad Samia", startSurah: 58, startAyah: 1, endSurah: 66, endAyah: 12, arabicName: "قد سمع" },
+  { number: 29, name: "Tabaraka", startSurah: 67, startAyah: 1, endSurah: 77, endAyah: 50, arabicName: "تبارك" },
+  { number: 30, name: "Amma", startSurah: 78, startAyah: 1, endSurah: 114, endAyah: 6, arabicName: "عمّ" },
+];
+
 // Hadith Collection Schema
 export const hadithCollectionSchema = z.object({
   name: z.string(),
