@@ -54,8 +54,8 @@ const learningSections: LearningSection[] = [
 
 const reciters = [
   { id: "ar.minshawi", name: "Mohamed Siddiq al-Minshawi (Murattal)", shortName: "Minshawi" },
-  { id: "ar.sudais", name: "Sheikh Sudais", shortName: "Sudais" },
-  { id: "ar.ghamadi", name: "Sheikh Ghamdi", shortName: "Ghamdi" },
+  { id: "ar.maherramezain", name: "Maher Al Mueaqly", shortName: "Maher" },
+  { id: "ar.gharmaoui", name: "Muhammad Tawheed Al-Gharmaoui", shortName: "Gharmaoui" },
 ];
 
 export default function KidsLearning() {
