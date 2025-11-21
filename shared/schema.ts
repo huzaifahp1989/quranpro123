@@ -66,6 +66,17 @@ export const reciterSchema = z.object({
 
 export type Reciter = z.infer<typeof reciterSchema>;
 
+// Available Reciters
+export const availableReciters: Reciter[] = [
+  { identifier: "ar.alafasy", name: "Mishari Alafasy", style: "Modern" },
+  { identifier: "ar.abdulbasitmurattal", name: "Abdul Basit Murratal", style: "Murratal" },
+  { identifier: "ar.minshawi", name: "Muhammad Minshawi", style: "Murattal" },
+  { identifier: "ar.husary", name: "Mahmoud Al-Hussary", style: "Murattal" },
+  { identifier: "ar.shaatree", name: "Abu Bakr Al-Shatri", style: "Tajweed" },
+  { identifier: "ar.abdulsamad", name: "Abdul Samad", style: "Murattal" },
+  { identifier: "ar.parhizgar", name: "Hani Rifai", style: "Tajweed" },
+];
+
 // Juz (Para) Schema
 export const juzSchema = z.object({
   number: z.number(),

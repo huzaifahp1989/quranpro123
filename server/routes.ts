@@ -354,6 +354,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all books
+  app.get("/api/books", async (req, res) => {
+    try {
+      const books = await storage.getAllBooks();
+      res.json(books);
+    } catch (error: any) {
+      console.error("Error fetching books:", error.message);
+      res.status(500).json({ error: "Failed to fetch books" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
