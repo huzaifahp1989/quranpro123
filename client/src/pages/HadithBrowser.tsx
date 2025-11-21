@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Book, BookOpen, Loader2, GraduationCap } from "lucide-react";
-import { Link } from "wouter";
+import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HadithCard } from "@/components/HadithCard";
+import { TopNav } from "@/components/TopNav";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Hadith, HadithCollection } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,6 +22,21 @@ export default function HadithBrowser() {
   const [selectedCollection, setSelectedCollection] = useState("bukhari");
   const [page, setPage] = useState(1);
   const [accumulatedHadiths, setAccumulatedHadiths] = useState<Hadith[]>([]);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
   // Construct query parameters
   const queryParams = new URLSearchParams();
@@ -80,77 +95,10 @@ export default function HadithBrowser() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <TopNav title="Hadith Collection" subtitle="Authentic Traditions of Prophet Muhammad ﷺ" theme={theme} onThemeToggle={toggleTheme} />
+      
+      <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
-                <Book className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-xl font-semibold truncate">Hadith Collection</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block truncate">Authentic Traditions of Prophet Muhammad ﷺ</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0 overflow-x-auto">
-              <Link href="/surahs">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-surahs"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Surahs"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/stories">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-stories"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Stories"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/fiqh">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-fiqh"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Fiqh"
-                >
-                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/kids">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-kids"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Kids"
-                >
-                  <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-quran"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Quran"
-                >
-                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             <Input
@@ -162,7 +110,7 @@ export default function HadithBrowser() {
             />
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
         <Tabs value={selectedCollection} onValueChange={handleCollectionChange}>

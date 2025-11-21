@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Book, Play, Pause, RotateCcw, Volume2, Loader2 } from "lucide-react";
-import { Link } from "wouter";
+import { Play, Pause, RotateCcw, Volume2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TopNav } from "@/components/TopNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,43 +182,26 @@ export default function KidsLearning() {
     }
   };
 
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <audio ref={audioRef} preload="auto" />
-      
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 shrink-0">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <h1 className="text-base sm:text-lg md:text-xl font-semibold truncate">Learn Quran for Kids</h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Listen, Learn, and Repeat</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Link href="/stories">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  data-testid="button-nav-stories"
-                  className="h-8 w-8 sm:h-9 sm:w-9"
-                  title="Stories"
-                >
-                  <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button variant="outline" size="icon" data-testid="button-nav-quran" className="h-8 w-8 sm:h-9 sm:w-9" title="Quran">
-                  <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopNav title="Learn Quran for Kids" subtitle="Listen, Learn, and Repeat" theme={theme} onThemeToggle={toggleTheme} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-8">
         <Tabs value={mainTab} onValueChange={setMainTab} className="mb-8">

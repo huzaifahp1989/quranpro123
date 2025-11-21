@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { BookOpen, Moon, Sun, Book, ChevronDown } from "lucide-react";
-import { Link } from "wouter";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TopNav } from "@/components/TopNav";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
