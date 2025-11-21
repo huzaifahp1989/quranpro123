@@ -63,32 +63,56 @@ export default function MemoQuran() {
     queryKey: ['/api/surahs'],
   });
 
+  // For Juz mode: fetch multiple surahs if needed
+  const shouldFetchMultipleSurahs = mode === 'juz';
+  const juzData = allJuz[selectedJuz - 1];
+  const surahsToFetch = shouldFetchMultipleSurahs && juzData 
+    ? Array.from({ length: juzData.endSurah - juzData.startSurah + 1 }, (_, i) => juzData.startSurah + i)
+    : [selectedSurah];
+
+  // Fetch first surah verses
   const { data: verses, isLoading: isVersesLoading } = useQuery<VerseWithTranslations[]>({
     queryKey: ['/api/surah', selectedSurah, selectedReciter],
     enabled: selectedSurah > 0,
   });
 
+  // Fetch additional surahs for Juz if needed
+  const { data: additionalVerses, isLoading: isAdditionalLoading } = useQuery<VerseWithTranslations[]>({
+    queryKey: ['/api/surah', shouldFetchMultipleSurahs && surahsToFetch.length > 1 ? surahsToFetch[1] : selectedSurah, selectedReciter],
+    enabled: shouldFetchMultipleSurahs && surahsToFetch.length > 1,
+  });
+
+  // Combine all verses for Juz mode
+  const allVerses = shouldFetchMultipleSurahs && juzData && verses && additionalVerses 
+    ? [...verses, ...additionalVerses]
+    : verses;
+
   const currentSurah = surahs?.find(s => s.number === selectedSurah);
   const maxVerses = currentSurah?.numberOfAyahs || 7;
 
   useEffect(() => {
-    if (endVerse > maxVerses) {
+    if (endVerse > maxVerses && mode === 'surah') {
       setEndVerse(maxVerses);
     }
-  }, [maxVerses]);
+  }, [maxVerses, mode]);
 
   const getVerseRange = () => {
-    if (!verses) return [];
+    if (!allVerses) return [];
+    if (mode === 'juz' && juzData) {
+      // For Juz: include all verses from start to end
+      return allVerses;
+    }
+    // For Surah: use startVerse and endVerse
     const start = Math.max(0, startVerse - 1);
-    const end = Math.min(verses.length, endVerse);
-    return verses.slice(start, end);
+    const end = Math.min(allVerses.length, endVerse);
+    return allVerses.slice(start, end);
   };
 
   const verseRange = getVerseRange();
 
   const playCurrentVerse = useCallback(() => {
     // Check if verses are loaded
-    if (!verses || verses.length === 0) {
+    if (!allVerses || allVerses.length === 0) {
       console.warn('Verses not loaded yet');
       return;
     }
@@ -116,7 +140,7 @@ export default function MemoQuran() {
       audioRef.current.play().catch(err => console.error('Play error:', err));
       setIsPlaying(true);
     }
-  }, [verses, verseRange, currentVerseIndex, playbackSpeed, audioMode]);
+  }, [allVerses, verseRange, currentVerseIndex, playbackSpeed, audioMode]);
 
   useEffect(() => {
     if (!audioRef.current) return;

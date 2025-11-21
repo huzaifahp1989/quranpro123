@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { SurahSelector } from "@/components/SurahSelector";
 import { VerseDisplay } from "@/components/VerseDisplay";
 import { AudioPlayer } from "@/components/AudioPlayer";
