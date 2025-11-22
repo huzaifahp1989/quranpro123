@@ -387,7 +387,8 @@ export default function MemoQuran() {
               </Card>
             )}
 
-            {/* Verse Range Selection */}
+            {/* Verse Range Selection - Only for Surah mode */}
+            {mode === 'surah' && (
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Verse Range</CardTitle>
@@ -413,6 +414,7 @@ export default function MemoQuran() {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Loading indicator for Juz mode */}
             {mode === 'juz' && isVersesLoading && (
