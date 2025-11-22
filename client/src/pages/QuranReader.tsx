@@ -134,10 +134,16 @@ export default function QuranReader() {
     if (verses && currentVerse < verses.length) {
       const nextVerse = currentVerse + 1;
       setCurrentVerse(nextVerse);
+      // Continue playing with auto-play enabled
+      setShouldAutoPlay(true);
     } else if (selectedSurah < 114) {
+      // Move to next surah and start at verse 1
       setSelectedSurah(selectedSurah + 1);
       setCurrentVerse(1);
+      // Enable auto-play for the next surah's first verse
+      setShouldAutoPlay(true);
     } else {
+      // Reached end of Quran
       setIsAudioPlaying(false);
     }
   };
