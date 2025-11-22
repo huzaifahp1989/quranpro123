@@ -66,7 +66,7 @@ export function TafseerPanel({
           isOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
-        <Card className="rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 h-[60vh] flex flex-col">
+        <Card className="rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 h-[35vh] flex flex-col">
           <div className="flex flex-col gap-3 p-4 border-b border-card-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
