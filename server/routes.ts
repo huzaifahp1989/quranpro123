@@ -6,7 +6,6 @@ import { insertBookmarkSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 const ALQURAN_CLOUD_API = "http://api.alquran.cloud/v1";
-const QURAN_TAFSEER_API = "http://api.quran-tafseer.com";
 
 // Simple in-memory cache
 const cache = new Map<string, { data: any; timestamp: number }>();
@@ -228,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Tafseer for a specific verse
+  // Get Tafseer for a specific verse (English - Ibn Kathir)
   app.get("/api/tafseer/:surahNumber/:ayahNumber", async (req, res) => {
     try {
       const { surahNumber, ayahNumber } = req.params;
@@ -241,40 +240,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid surah or ayah number" });
       }
 
-      const tafseerID = 1; // Al-Tafsir Al-Muyassar (simple tafseer)
-      const cacheKey = `tafseer-${surahNumber}-${ayahNumber}`;
+      const cacheKey = `tafseer-en-${surahNumber}-${ayahNumber}`;
       const cached = getFromCache(cacheKey);
       if (cached) {
         return res.json(cached);
       }
 
-      const response = await axios.get(
-        `${QURAN_TAFSEER_API}/tafseer/${tafseerID}/${surahNumber}/${ayahNumber}`,
-        { timeout: 10000 }
-      );
+      // Fetch English tafsir (Ibn Kathir edition) from AlQuran Cloud API
+      // Try Ibn Kathir English first
+      try {
+        const response = await axios.get(
+          `${ALQURAN_CLOUD_API}/tafsirs/en-ibn-kathir/${surahNumber}:${ayahNum}`,
+          { timeout: 10000 }
+        );
 
-      if (response.data && response.data.text) {
-        const tafseer = {
-          ayahNumber: ayahNum,
-          text: response.data.text,
-          tafseerName: "التفسير الميسر (Al-Tafsir Al-Muyassar)",
-          language: "Arabic",
-        };
-        
-        setCache(cacheKey, tafseer);
-        res.json(tafseer);
-      } else {
-        res.status(404).json({ error: "Tafseer not found for this verse" });
+        if (response.data && response.data.result && response.data.result.tafsir) {
+          const tafsirData = response.data.result.tafsir;
+          const tafseer = {
+            ayahNumber: ayahNum,
+            text: tafsirData.text || "Tafsir not available",
+            tafseerName: "Tafsir Ibn Kathir",
+            language: "English",
+          };
+          
+          setCache(cacheKey, tafseer);
+          return res.json(tafseer);
+        }
+      } catch (err) {
+        console.log("Ibn Kathir tafsir not available, trying alternative source");
       }
+
+      // Fallback: Try Maariful Quran or other English editions
+      try {
+        const response = await axios.get(
+          `${ALQURAN_CLOUD_API}/tafsirs/en-maarifulquran/${surahNumber}:${ayahNum}`,
+          { timeout: 10000 }
+        );
+
+        if (response.data && response.data.result && response.data.result.tafsir) {
+          const tafsirData = response.data.result.tafsir;
+          const tafseer = {
+            ayahNumber: ayahNum,
+            text: tafsirData.text || "Tafsir not available",
+            tafseerName: "Maariful Quran",
+            language: "English",
+          };
+          
+          setCache(cacheKey, tafseer);
+          return res.json(tafseer);
+        }
+      } catch (err) {
+        console.log("Maariful Quran tafsir not available");
+      }
+
+      // If both fail, return a message
+      res.status(404).json({ error: "English tafseer not available for this verse at this time" });
     } catch (error: any) {
       console.error("Error fetching tafseer:", error.message);
-      if (error.response?.status === 404) {
-        res.status(404).json({ error: "Tafseer not available for this verse" });
-      } else if (error.code === 'ECONNABORTED') {
-        res.status(504).json({ error: "Request timeout - please try again" });
-      } else {
-        res.status(500).json({ error: "Failed to fetch tafseer" });
-      }
+      res.status(500).json({ error: "Failed to fetch tafseer" });
     }
   });
 
