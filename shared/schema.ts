@@ -100,7 +100,7 @@ export const allJuz: Juz[] = [
   { number: 4, name: "Lan Tanālu", startSurah: 3, startAyah: 92, endSurah: 4, endAyah: 23, arabicName: "لن تنالوا" },
   { number: 5, name: "Wal-Muḥsanāt", startSurah: 4, startAyah: 24, endSurah: 4, endAyah: 147, arabicName: "والمحصنات" },
   { number: 6, name: "Lā Yuḥibbullāh", startSurah: 4, startAyah: 148, endSurah: 5, endAyah: 81, arabicName: "لا يحب" },
-  { number: 7, name: "Wa Idhā Samiʿū", startSurah: 5, startAyah: 82, endSurah: 6, endAyah: 110, arabicName: "وإذا سمعوا" },
+  { number: 7, name: "Wa Idhā Samiʿū", startSurah: 5, startAyah: 83, endSurah: 6, endAyah: 110, arabicName: "وإذا سمعوا" },
   { number: 8, name: "Walaw Annanā", startSurah: 6, startAyah: 111, endSurah: 7, endAyah: 87, arabicName: "ولو أنا" },
   { number: 9, name: "Qāla al-Malāʼ", startSurah: 7, startAyah: 88, endSurah: 8, endAyah: 40, arabicName: "قال الملأ" },
   { number: 10, name: "Waʿlamū", startSurah: 8, startAyah: 41, endSurah: 9, endAyah: 92, arabicName: "واعلموا" },
