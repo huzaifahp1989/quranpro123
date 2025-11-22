@@ -73,20 +73,34 @@ export default function MemoQuran() {
 
   // Fetch first surah verses
   const { data: verses, isLoading: isVersesLoading } = useQuery<VerseWithTranslations[]>({
-    queryKey: ['/api/surah', selectedSurah, selectedReciter],
-    enabled: selectedSurah > 0,
+    queryKey: ['/api/surah', surahsToFetch[0], selectedReciter],
+    enabled: surahsToFetch.length > 0,
   });
 
-  // Fetch additional surahs for Juz if needed
-  const { data: additionalVerses, isLoading: isAdditionalLoading } = useQuery<VerseWithTranslations[]>({
-    queryKey: ['/api/surah', shouldFetchMultipleSurahs && surahsToFetch.length > 1 ? surahsToFetch[1] : selectedSurah, selectedReciter],
-    enabled: shouldFetchMultipleSurahs && surahsToFetch.length > 1,
+  // Fetch second surah if needed
+  const { data: verses2, isLoading: isVerses2Loading } = useQuery<VerseWithTranslations[]>({
+    queryKey: ['/api/surah', surahsToFetch[1], selectedReciter],
+    enabled: surahsToFetch.length > 1,
+  });
+
+  // Fetch third surah if needed
+  const { data: verses3, isLoading: isVerses3Loading } = useQuery<VerseWithTranslations[]>({
+    queryKey: ['/api/surah', surahsToFetch[2], selectedReciter],
+    enabled: surahsToFetch.length > 2,
   });
 
   // Combine all verses for Juz mode
-  const allVerses = shouldFetchMultipleSurahs && juzData && verses && additionalVerses 
-    ? [...verses, ...additionalVerses]
+  const allVerses = shouldFetchMultipleSurahs && juzData
+    ? [
+        ...(verses || []),
+        ...(verses2 || []),
+        ...(verses3 || []),
+      ]
     : verses;
+
+  const isVersesLoading_all = shouldFetchMultipleSurahs 
+    ? isVersesLoading || (surahsToFetch.length > 1 && isVerses2Loading) || (surahsToFetch.length > 2 && isVerses3Loading)
+    : isVersesLoading;
 
   const currentSurah = surahs?.find(s => s.number === selectedSurah);
   const maxVerses = currentSurah?.numberOfAyahs || 7;
@@ -417,7 +431,7 @@ export default function MemoQuran() {
             )}
 
             {/* Loading indicator for Juz mode */}
-            {mode === 'juz' && isVersesLoading && (
+            {mode === 'juz' && isVersesLoading_all && (
               <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                 <CardContent className="pt-4 flex items-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin text-blue-600 dark:text-blue-400" />
@@ -512,7 +526,7 @@ export default function MemoQuran() {
               </div>
             )}
 
-            {verseRange.length > 0 && !isVersesLoading && (
+            {verseRange.length > 0 && !isVersesLoading_all && (
               <>
                 <Card>
                   <CardHeader className="pb-2 border-b">
