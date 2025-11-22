@@ -250,7 +250,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "en-tafsir-maarif-ul-quran": "Maariful Quran",
         "en-al-jalalayn": "Tafsir Al-Jalalayn",
         "en-tafsir-ibn-abbas": "Tafsir Ibn Abbas",
-        "en-al-qushairi-tafsir": "Al-Qushairi Tafsir",
       };
 
       // Define fallback order: try requested first, then fall back to most complete editions
@@ -260,7 +259,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "en-tafsir-maarif-ul-quran",
         "en-al-jalalayn",
         "en-tafsir-ibn-abbas",
-        "en-al-qushairi-tafsir",
       ];
 
       // Remove duplicates while preserving order

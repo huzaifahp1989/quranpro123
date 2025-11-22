@@ -18,7 +18,6 @@ const TAFSIR_EDITIONS = [
   { value: "en-tafsir-maarif-ul-quran", label: "Maariful Quran" },
   { value: "en-al-jalalayn", label: "Tafsir Al-Jalalayn" },
   { value: "en-tafsir-ibn-abbas", label: "Tafsir Ibn Abbas" },
-  { value: "en-al-qushairi-tafsir", label: "Al-Qushairi Tafsir" },
 ] as const;
 
 interface TafseerPanelProps {
