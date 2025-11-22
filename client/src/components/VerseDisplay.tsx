@@ -21,14 +21,17 @@ export function VerseDisplay({ verse, isHighlighted, onVerseClick, onPlayClick }
   return (
     <div
       className={cn(
-        "group relative mb-4 p-4 sm:p-6 border-l-2 transition-all hover-elevate",
+        "group relative mb-4 p-4 sm:p-6 border-l-2 transition-all hover-elevate cursor-pointer",
         isHighlighted 
           ? "border-l-primary bg-primary/5" 
           : "border-l-border"
       )}
       data-testid={`verse-${ayah.numberInSurah}`}
       data-verse-number={ayah.numberInSurah}
-      onClick={() => onVerseClick?.(ayah.number)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPlayClick?.(ayah.numberInSurah);
+      }}
     >
       <div className="flex items-start justify-between gap-4 mb-3">
         <Badge 

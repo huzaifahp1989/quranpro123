@@ -142,12 +142,17 @@ export default function QuranReader() {
     }
   };
 
-  const handleVerseClick = (verseNumber: number) => {
-    const verseIndex = verses?.findIndex(v => v.ayah.number === verseNumber);
-    if (verses && verseIndex !== undefined && verseIndex >= 0) {
-      setSelectedVerseForTafseer(verses[verseIndex].ayah.numberInSurah);
-      setIsTafseerOpen(true);
+  const handleVerseClick = (verseNumberInSurah: number) => {
+    // Also open tafseer for the clicked verse
+    setSelectedVerseForTafseer(verseNumberInSurah);
+    setIsTafseerOpen(true);
+    
+    // Play the verse
+    if (verseNumberInSurah !== currentVerse) {
+      setIsAudioPlaying(false);
     }
+    setCurrentVerse(verseNumberInSurah);
+    setShouldAutoPlay(true);
   };
 
   const handlePlayVerseClick = (verseNumberInSurah: number) => {
