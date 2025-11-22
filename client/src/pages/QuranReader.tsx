@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen, Bookmark } from "lucide-react";
+import { Loader2, BookOpen, Bookmark, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SurahSelector } from "@/components/SurahSelector";
@@ -28,6 +28,7 @@ export default function QuranReader() {
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ surah: number; ayah: number } | null>(null);
   const [bookmarkedVerses, setBookmarkedVerses] = useState<{ surah: number; ayah: number }[]>([]);
+  const [showVerses, setShowVerses] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -248,6 +249,15 @@ export default function QuranReader() {
                   </Select>
                 )}
               </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setShowVerses(!showVerses)}
+                data-testid="button-toggle-verses"
+                aria-label={showVerses ? "Hide verses" : "Show verses"}
+              >
+                {showVerses ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+              </Button>
               <VoiceRecognitionButton
                 verses={verses}
                 surahs={surahs}
@@ -281,93 +291,95 @@ export default function QuranReader() {
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
-        {currentSurah && (
-          <div className="mb-6 sm:mb-8 text-center">
-            {mode === 'juz' && allJuz[selectedJuz - 1] && (
-              <p className="text-xs sm:text-sm text-primary font-semibold mb-2">
-                Juz {selectedJuz}: {allJuz[selectedJuz - 1].name}
+      {showVerses && (
+        <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
+          {currentSurah && (
+            <div className="mb-6 sm:mb-8 text-center">
+              {mode === 'juz' && allJuz[selectedJuz - 1] && (
+                <p className="text-xs sm:text-sm text-primary font-semibold mb-2">
+                  Juz {selectedJuz}: {allJuz[selectedJuz - 1].name}
+                </p>
+              )}
+              <h2 className="font-arabic text-3xl sm:text-4xl mb-2" data-testid="text-surah-name-arabic">
+                {currentSurah.name}
+              </h2>
+              <p className="text-lg sm:text-xl font-semibold mb-1" data-testid="text-surah-name-english">
+                {currentSurah.englishName}
               </p>
-            )}
-            <h2 className="font-arabic text-3xl sm:text-4xl mb-2" data-testid="text-surah-name-arabic">
-              {currentSurah.name}
-            </h2>
-            <p className="text-lg sm:text-xl font-semibold mb-1" data-testid="text-surah-name-english">
-              {currentSurah.englishName}
-            </p>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              {currentSurah.englishNameTranslation} • {currentSurah.numberOfAyahs} Verses • {currentSurah.revelationType}
-            </p>
-          </div>
-        )}
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                {currentSurah.englishNameTranslation} • {currentSurah.numberOfAyahs} Verses • {currentSurah.revelationType}
+              </p>
+            </div>
+          )}
 
-        {isVersesLoading ? (
-          <div className="space-y-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="p-6 rounded-lg border border-border">
-                <Skeleton className="h-6 w-12 mb-4" />
-                <Skeleton className="h-20 w-full mb-4" />
-                <Skeleton className="h-16 w-full mb-3" />
-                <Skeleton className="h-16 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : verses && verses.length > 0 ? (
-          <div data-testid="container-verses">
-            {verses.map((verse) => {
-              const isBookmarked = bookmarkedVerses.some(v => v.surah === selectedSurah && v.ayah === verse.ayah.numberInSurah);
-              return (
-                <div key={verse.ayah.number} className="relative group">
-                  <VerseDisplay
-                    verse={verse}
-                    isHighlighted={verse.ayah.numberInSurah === currentVerse}
-                    onVerseClick={handleVerseClick}
-                    onPlayClick={handlePlayVerseClick}
-                  />
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => toggleBookmark(selectedSurah, verse.ayah.numberInSurah)}
-                    data-testid={`btn-bookmark-${selectedSurah}-${verse.ayah.numberInSurah}`}
-                  >
-                    <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
-                  </Button>
+          {isVersesLoading ? (
+            <div className="space-y-6">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-6 rounded-lg border border-border">
+                  <Skeleton className="h-6 w-12 mb-4" />
+                  <Skeleton className="h-20 w-full mb-4" />
+                  <Skeleton className="h-16 w-full mb-3" />
+                  <Skeleton className="h-16 w-full" />
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <BookOpen className="w-16 h-16 text-muted-foreground/50 mb-4" />
-            {versesError ? (
-              <>
-                <p className="text-lg font-medium mb-2 text-destructive">Failed to load verses</p>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  {versesError instanceof Error ? versesError.message : "Unable to load Quran verses. Please check your internet connection and try again."}
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => window.location.reload()}
-                  data-testid="button-retry"
-                >
-                  Reload Page
-                </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-lg font-medium mb-2">No verses found</p>
-                <p className="text-sm text-muted-foreground">
-                  Please select a surah to start reading
-                </p>
-              </>
-            )}
-          </div>
-        )}
-      </main>
+              ))}
+            </div>
+          ) : verses && verses.length > 0 ? (
+            <div data-testid="container-verses">
+              {verses.map((verse) => {
+                const isBookmarked = bookmarkedVerses.some(v => v.surah === selectedSurah && v.ayah === verse.ayah.numberInSurah);
+                return (
+                  <div key={verse.ayah.number} className="relative group">
+                    <VerseDisplay
+                      verse={verse}
+                      isHighlighted={verse.ayah.numberInSurah === currentVerse}
+                      onVerseClick={handleVerseClick}
+                      onPlayClick={handlePlayVerseClick}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => toggleBookmark(selectedSurah, verse.ayah.numberInSurah)}
+                      data-testid={`btn-bookmark-${selectedSurah}-${verse.ayah.numberInSurah}`}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <BookOpen className="w-16 h-16 text-muted-foreground/50 mb-4" />
+              {versesError ? (
+                <>
+                  <p className="text-lg font-medium mb-2 text-destructive">Failed to load verses</p>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    {versesError instanceof Error ? versesError.message : "Unable to load Quran verses. Please check your internet connection and try again."}
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                    data-testid="button-retry"
+                  >
+                    Reload Page
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <p className="text-lg font-medium mb-2">No verses found</p>
+                  <p className="text-sm text-muted-foreground">
+                    Please select a surah to start reading
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+        </main>
+      )}
 
-      {verses && verses.length > 0 && (
+      {showVerses && verses && verses.length > 0 && (
         <AudioPlayer
           audioUrl={audioUrl}
           currentVerse={currentVerse}
