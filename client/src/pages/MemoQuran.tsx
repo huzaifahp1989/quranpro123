@@ -518,8 +518,17 @@ export default function MemoQuran() {
                   <CardHeader className="pb-2 border-b">
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-sm">Surah {currentSurah?.name} • Verse {currentVerseIndex + startVerse}/{endVerse}</CardTitle>
-                        <CardDescription className="text-xs mt-1">{verseRange[currentVerseIndex + 1] ? `Verse ${currentVerseIndex + 1}/${verseRange.length}` : 'Last verse'}</CardDescription>
+                        {mode === 'juz' ? (
+                          <>
+                            <CardTitle className="text-sm">Juz {selectedJuz} • Surah {verseRange[currentVerseIndex]?.ayah.surah?.number} • Verse {verseRange[currentVerseIndex]?.ayah.numberInSurah}/{verseRange.length}</CardTitle>
+                            <CardDescription className="text-xs mt-1">{currentVerseIndex + 1}/{verseRange.length}</CardDescription>
+                          </>
+                        ) : (
+                          <>
+                            <CardTitle className="text-sm">Surah {currentSurah?.name} • Verse {currentVerseIndex + startVerse}/{endVerse}</CardTitle>
+                            <CardDescription className="text-xs mt-1">{verseRange[currentVerseIndex + 1] ? `Verse ${currentVerseIndex + 1}/${verseRange.length}` : 'Last verse'}</CardDescription>
+                          </>
+                        )}
                       </div>
                     </div>
                   </CardHeader>
@@ -527,7 +536,11 @@ export default function MemoQuran() {
                     {verseRange[currentVerseIndex] && (
                       <div className="text-center space-y-3 bg-muted/50 p-4 rounded-md">
                         <p className="font-arabic text-3xl leading-loose">{verseRange[currentVerseIndex].ayah?.text}</p>
-                        <p className="text-xs text-muted-foreground font-semibold">Ayah {currentVerseIndex + startVerse}</p>
+                        {mode === 'juz' ? (
+                          <p className="text-xs text-muted-foreground font-semibold">Surah {verseRange[currentVerseIndex].ayah.surah?.number}:{verseRange[currentVerseIndex].ayah.numberInSurah}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground font-semibold">Ayah {currentVerseIndex + startVerse}</p>
+                        )}
                         {verseRange[currentVerseIndex].urduTranslation && <p className="text-xs text-foreground/80 mt-2">{verseRange[currentVerseIndex].urduTranslation.text}</p>}
                         {verseRange[currentVerseIndex].englishTranslation && <p className="text-xs text-foreground/70 mt-2">{verseRange[currentVerseIndex].englishTranslation.text}</p>}
                       </div>
@@ -560,7 +573,7 @@ export default function MemoQuran() {
                               {verse.englishTranslation && <p className="text-xs text-muted-foreground mt-1">{verse.englishTranslation.text}</p>}
                             </div>
                             <span className="text-xs font-semibold shrink-0 whitespace-nowrap px-2 py-1 bg-muted rounded">
-                              {index + startVerse}
+                              {mode === 'juz' ? `${verse.ayah.surah?.number}:${verse.ayah.numberInSurah}` : index + startVerse}
                             </span>
                           </div>
                         </button>
