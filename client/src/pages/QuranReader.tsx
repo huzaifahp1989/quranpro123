@@ -20,6 +20,9 @@ export default function QuranReader() {
   const [selectedReciter, setSelectedReciter] = useState(availableReciters[0].identifier);
   const [isTafseerOpen, setIsTafseerOpen] = useState(false);
   const [selectedVerseForTafseer, setSelectedVerseForTafseer] = useState<number | null>(null);
+  const [tafsirEdition, setTafsirEdition] = useState<string>(() => {
+    return localStorage.getItem("tafsirEdition") || "en-tafisr-ibn-kathir";
+  });
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
@@ -53,10 +56,25 @@ export default function QuranReader() {
     enabled: selectedSurah > 0,
   });
 
-  const { data: tafseer, isLoading: isTafseerLoading } = useQuery<Tafseer>({
-    queryKey: ['/api/tafseer', selectedSurah, selectedVerseForTafseer],
+  const { data: tafseer, isLoading: isTafseerLoading, error: tafseerError } = useQuery<Tafseer>({
+    queryKey: ['/api/tafseer', selectedSurah, selectedVerseForTafseer, tafsirEdition],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/tafseer/${selectedSurah}/${selectedVerseForTafseer}?edition=${tafsirEdition}`
+      );
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch tafseer' }));
+        throw new Error(errorData.error || 'Failed to fetch tafseer');
+      }
+      return response.json();
+    },
     enabled: selectedVerseForTafseer !== null && isTafseerOpen,
   });
+
+  const handleTafsirEditionChange = (edition: string) => {
+    setTafsirEdition(edition);
+    localStorage.setItem("tafsirEdition", edition);
+  };
 
   const currentSurah = surahs?.find(s => s.number === selectedSurah);
   const currentVerseData = verses?.[currentVerse - 1];
@@ -372,6 +390,10 @@ export default function QuranReader() {
         onToggle={() => setIsTafseerOpen(!isTafseerOpen)}
         isLoading={isTafseerLoading}
         verseNumber={selectedVerseForTafseer || undefined}
+        surahNumber={selectedSurah}
+        selectedEdition={tafsirEdition}
+        onEditionChange={handleTafsirEditionChange}
+        error={tafseerError?.message || null}
       />
     </div>
   );

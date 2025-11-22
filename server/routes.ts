@@ -227,10 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Tafseer for a specific verse (English - Ibn Kathir & Maariful Quran)
+  // Get Tafseer for a specific verse (English - Multiple Editions)
   app.get("/api/tafseer/:surahNumber/:ayahNumber", async (req, res) => {
     try {
       const { surahNumber, ayahNumber } = req.params;
+      const edition = (req.query.edition as string) || "en-tafisr-ibn-kathir";
       
       // Validate input
       const surahNum = parseInt(surahNumber);
@@ -240,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid surah or ayah number" });
       }
 
-      const cacheKey = `tafseer-en-${surahNumber}-${ayahNumber}`;
+      const cacheKey = `tafseer-${edition}-${surahNumber}-${ayahNumber}`;
       const cached = getFromCache(cacheKey);
       if (cached) {
         return res.json(cached);
@@ -249,22 +250,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use spa5k/tafsir_api - free CDN-hosted English tafsirs
       const TAFSIR_CDN = "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir";
 
-      // Try Ibn Kathir English first
+      // Tafsir name mapping
+      const TAFSIR_NAMES: Record<string, string> = {
+        "en-tafisr-ibn-kathir": "Tafsir Ibn Kathir",
+        "en-tafsir-maarif-ul-quran": "Maariful Quran",
+        "en-al-jalalayn": "Tafsir Al-Jalalayn",
+        "en-tafsir-ibn-abbas": "Tafsir Ibn Abbas",
+        "en-al-qushairi-tafsir": "Al-Qushairi Tafsir",
+      };
+
+      // Try the requested edition
       try {
         const response = await axios.get(
-          `${TAFSIR_CDN}/en-tafisr-ibn-kathir/${surahNum}.json`,
+          `${TAFSIR_CDN}/${edition}/${surahNum}.json`,
           { timeout: 10000 }
         );
 
         if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
-          // Find the specific ayah in the surah data
           const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
           
           if (ayahTafsir && ayahTafsir.text) {
             const tafseer = {
               ayahNumber: ayahNum,
               text: ayahTafsir.text,
-              tafseerName: "Tafsir Ibn Kathir",
+              tafseerName: TAFSIR_NAMES[edition] || edition,
               language: "English",
             };
             
@@ -273,38 +282,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } catch (err) {
-        console.log("Ibn Kathir tafsir not available, trying Maariful Quran");
+        console.log(`Tafsir ${edition} not available for surah ${surahNum}, ayah ${ayahNum}`);
       }
 
-      // Fallback: Try Maariful Quran
-      try {
-        const response = await axios.get(
-          `${TAFSIR_CDN}/en-tafsir-maarif-ul-quran/${surahNum}.json`,
-          { timeout: 10000 }
-        );
-
-        if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
-          // Find the specific ayah in the surah data
-          const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
-          
-          if (ayahTafsir && ayahTafsir.text) {
-            const tafseer = {
-              ayahNumber: ayahNum,
-              text: ayahTafsir.text,
-              tafseerName: "Maariful Quran",
-              language: "English",
-            };
-            
-            setCache(cacheKey, tafseer);
-            return res.json(tafseer);
-          }
-        }
-      } catch (err) {
-        console.log("Maariful Quran tafsir also not available");
-      }
-
-      // If no English tafseer available, return error
-      res.status(404).json({ error: "English tafseer not available for this verse" });
+      // If requested edition not available, return error
+      res.status(404).json({ 
+        error: `Tafseer not available for this verse in ${TAFSIR_NAMES[edition] || edition}` 
+      });
     } catch (error: any) {
       console.error("Error fetching tafseer:", error.message);
       res.status(500).json({ error: "Failed to fetch tafseer" });
