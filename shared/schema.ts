@@ -75,8 +75,8 @@ export const availableReciters: Reciter[] = [
   { identifier: "ar.shaatree", name: "Abu Bakr Al-Shatri", style: "Tajweed" },
   { identifier: "ar.abdulsamad", name: "Abdul Samad", style: "Murattal" },
   { identifier: "ar.parhizgar", name: "Hani Rifai", style: "Tajweed" },
-  { identifier: "ar.saad_al_ghamdi", name: "Saad Al-Ghamdi", style: "Tajweed" },
-  { identifier: "ar.youssef_ennani", name: "Youssef Al-Ennani", style: "Modern" },
+  { identifier: "ar.muhammadayyoub", name: "Muhammad Ayyoub", style: "Tajweed" },
+  { identifier: "ar.muhammadjibreel", name: "Muhammad Jibreel", style: "Modern" },
 ];
 
 // Juz (Para) Schema
