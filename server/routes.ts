@@ -246,54 +246,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(cached);
       }
 
-      // Try Ibn Kathir English (edition ID 16)
+      // Use spa5k/tafsir_api - free CDN-hosted English tafsirs
+      const TAFSIR_CDN = "https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir";
+
+      // Try Ibn Kathir English first
       try {
         const response = await axios.get(
-          `${ALQURAN_CLOUD_API}/tafsir/16/${surahNum}/${ayahNum}`,
+          `${TAFSIR_CDN}/en-tafisr-ibn-kathir/${surahNum}.json`,
           { timeout: 10000 }
         );
 
-        if (response.data && response.data.code === 200 && response.data.data) {
-          const tafsirData = response.data.data;
-          const tafseer = {
-            ayahNumber: ayahNum,
-            text: tafsirData.text || "Tafsir not available",
-            tafseerName: "Tafsir Ibn Kathir",
-            language: "English",
-          };
+        if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
+          // Find the specific ayah in the surah data
+          const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
           
-          setCache(cacheKey, tafseer);
-          return res.json(tafseer);
+          if (ayahTafsir && ayahTafsir.text) {
+            const tafseer = {
+              ayahNumber: ayahNum,
+              text: ayahTafsir.text,
+              tafseerName: "Tafsir Ibn Kathir",
+              language: "English",
+            };
+            
+            setCache(cacheKey, tafseer);
+            return res.json(tafseer);
+          }
         }
       } catch (err) {
-        console.log("Ibn Kathir tafsir not available, trying alternative");
+        console.log("Ibn Kathir tafsir not available, trying Maariful Quran");
       }
 
-      // Fallback: Try another English tafseer edition (Maariful Quran - edition ID 17)
+      // Fallback: Try Maariful Quran
       try {
         const response = await axios.get(
-          `${ALQURAN_CLOUD_API}/tafsir/17/${surahNum}/${ayahNum}`,
+          `${TAFSIR_CDN}/en-tafsir-maarif-ul-quran/${surahNum}.json`,
           { timeout: 10000 }
         );
 
-        if (response.data && response.data.code === 200 && response.data.data) {
-          const tafsirData = response.data.data;
-          const tafseer = {
-            ayahNumber: ayahNum,
-            text: tafsirData.text || "Tafsir not available",
-            tafseerName: "Maariful Quran",
-            language: "English",
-          };
+        if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
+          // Find the specific ayah in the surah data
+          const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
           
-          setCache(cacheKey, tafseer);
-          return res.json(tafseer);
+          if (ayahTafsir && ayahTafsir.text) {
+            const tafseer = {
+              ayahNumber: ayahNum,
+              text: ayahTafsir.text,
+              tafseerName: "Maariful Quran",
+              language: "English",
+            };
+            
+            setCache(cacheKey, tafseer);
+            return res.json(tafseer);
+          }
         }
       } catch (err) {
-        console.log("Maariful Quran not available either");
+        console.log("Maariful Quran tafsir also not available");
       }
 
-      // If no English tafseer available, return empty
-      res.status(404).json({ error: "Tafseer not available for this verse" });
+      // If no English tafseer available, return error
+      res.status(404).json({ error: "English tafseer not available for this verse" });
     } catch (error: any) {
       console.error("Error fetching tafseer:", error.message);
       res.status(500).json({ error: "Failed to fetch tafseer" });
