@@ -227,7 +227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Tafseer for a specific verse (English - Ibn Kathir)
+  // Get Tafseer for a specific verse (English - Ibn Kathir & Maariful Quran)
   app.get("/api/tafseer/:surahNumber/:ayahNumber", async (req, res) => {
     try {
       const { surahNumber, ayahNumber } = req.params;
@@ -246,16 +246,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(cached);
       }
 
-      // Fetch English tafsir (Ibn Kathir edition) from AlQuran Cloud API
-      // Try Ibn Kathir English first
+      // Try Ibn Kathir English (edition ID 16)
       try {
         const response = await axios.get(
-          `${ALQURAN_CLOUD_API}/tafsirs/en-ibn-kathir/${surahNumber}:${ayahNum}`,
+          `${ALQURAN_CLOUD_API}/tafsir/16/${surahNum}/${ayahNum}`,
           { timeout: 10000 }
         );
 
-        if (response.data && response.data.result && response.data.result.tafsir) {
-          const tafsirData = response.data.result.tafsir;
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const tafsirData = response.data.data;
           const tafseer = {
             ayahNumber: ayahNum,
             text: tafsirData.text || "Tafsir not available",
@@ -267,18 +266,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(tafseer);
         }
       } catch (err) {
-        console.log("Ibn Kathir tafsir not available, trying alternative source");
+        console.log("Ibn Kathir tafsir not available, trying alternative");
       }
 
-      // Fallback: Try Maariful Quran or other English editions
+      // Fallback: Try another English tafseer edition (Maariful Quran - edition ID 17)
       try {
         const response = await axios.get(
-          `${ALQURAN_CLOUD_API}/tafsirs/en-maarifulquran/${surahNumber}:${ayahNum}`,
+          `${ALQURAN_CLOUD_API}/tafsir/17/${surahNum}/${ayahNum}`,
           { timeout: 10000 }
         );
 
-        if (response.data && response.data.result && response.data.result.tafsir) {
-          const tafsirData = response.data.result.tafsir;
+        if (response.data && response.data.code === 200 && response.data.data) {
+          const tafsirData = response.data.data;
           const tafseer = {
             ayahNumber: ayahNum,
             text: tafsirData.text || "Tafsir not available",
@@ -290,11 +289,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(tafseer);
         }
       } catch (err) {
-        console.log("Maariful Quran tafsir not available");
+        console.log("Maariful Quran not available either");
       }
 
-      // If both fail, return a message
-      res.status(404).json({ error: "English tafseer not available for this verse at this time" });
+      // If no English tafseer available, return empty
+      res.status(404).json({ error: "Tafseer not available for this verse" });
     } catch (error: any) {
       console.error("Error fetching tafseer:", error.message);
       res.status(500).json({ error: "Failed to fetch tafseer" });
