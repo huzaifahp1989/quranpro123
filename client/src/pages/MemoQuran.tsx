@@ -262,9 +262,10 @@ export default function MemoQuran() {
                 <span>Guide</span>
               </TabsTrigger>
             </TabsList>
-            {allVerses && (
+            {allVerses && surahs && (
               <VoiceRecognitionButton
                 verses={allVerses}
+                surahs={surahs}
                 currentSurah={selectedSurah}
                 onNavigate={(surah, ayah) => {
                   setSelectedSurah(surah);

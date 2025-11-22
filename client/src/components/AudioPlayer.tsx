@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Square } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Square, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -52,6 +52,7 @@ export function AudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isRepeating, setIsRepeating] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -110,6 +111,22 @@ export function AudioPlayer({
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = playbackSpeed;
+    }
+  }, [playbackSpeed]);
+
+  const increaseSpeed = () => {
+    const newSpeed = Math.min(playbackSpeed + 0.25, 2.0);
+    setPlaybackSpeed(newSpeed);
+  };
+
+  const decreaseSpeed = () => {
+    const newSpeed = Math.max(playbackSpeed - 0.25, 0.5);
+    setPlaybackSpeed(newSpeed);
+  };
 
   // Handle auto-play trigger from parent (e.g., when clicking play on a verse)
   useEffect(() => {
@@ -324,17 +341,47 @@ export function AudioPlayer({
               </Button>
             </div>
 
-            {/* Volume control */}
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
-              <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
-              <Slider
-                value={[volume * 100]}
-                max={100}
-                step={1}
-                onValueChange={(value) => setVolume(value[0] / 100)}
-                className="w-20 sm:w-24"
-                data-testid="slider-volume"
-              />
+            {/* Speed and Volume controls */}
+            <div className="flex items-center gap-4 w-full sm:w-auto justify-center sm:justify-start">
+              {/* Speed control */}
+              <div className="flex items-center gap-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={decreaseSpeed}
+                  disabled={!audioUrl || isLoading}
+                  data-testid="button-speed-decrease"
+                  aria-label="Decrease speed"
+                  className="h-9 w-9"
+                >
+                  <Zap className="w-4 h-4" />
+                </Button>
+                <span className="text-xs font-semibold min-w-9 text-center">{playbackSpeed.toFixed(2)}x</span>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={increaseSpeed}
+                  disabled={!audioUrl || isLoading}
+                  data-testid="button-speed-increase"
+                  aria-label="Increase speed"
+                  className="h-9 w-9"
+                >
+                  <Zap className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Volume control */}
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                <Slider
+                  value={[volume * 100]}
+                  max={100}
+                  step={1}
+                  onValueChange={(value) => setVolume(value[0] / 100)}
+                  className="w-20 sm:w-24"
+                  data-testid="slider-volume"
+                />
+              </div>
             </div>
           </div>
         </div>
