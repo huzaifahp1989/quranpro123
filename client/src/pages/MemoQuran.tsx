@@ -115,7 +115,7 @@ export default function MemoQuran() {
     if (!allVerses) return [];
     if (mode === 'juz' && juzData) {
       // For Juz: filter verses to only include those within Juz boundaries
-      return allVerses.filter(verse => {
+      const filtered = allVerses.filter(verse => {
         const surahNum = verse.ayah.surah?.number || 0;
         const ayahNum = verse.ayah.numberInSurah;
         
@@ -134,6 +134,19 @@ export default function MemoQuran() {
         
         return true;
       });
+      
+      // Debug: Log filtering results
+      if (filtered.length > 0) {
+        console.log(`📖 Juz ${juzData.number} filtered verses:`, {
+          total: filtered.length,
+          firstVerse: `${filtered[0].ayah.surah?.number}:${filtered[0].ayah.numberInSurah}`,
+          lastVerse: `${filtered[filtered.length - 1].ayah.surah?.number}:${filtered[filtered.length - 1].ayah.numberInSurah}`,
+          expectedStart: `${juzData.startSurah}:${juzData.startAyah}`,
+          expectedEnd: `${juzData.endSurah}:${juzData.endAyah}`
+        });
+      }
+      
+      return filtered;
     }
     // For Surah: use startVerse and endVerse
     const start = Math.max(0, startVerse - 1);
@@ -213,10 +226,22 @@ export default function MemoQuran() {
       setIsPlaying(false);
     } else {
       // Check if verses are loaded before playing
-      if (!verses || verses.length === 0) {
+      if (!allVerses || allVerses.length === 0) {
         console.warn('Please wait for verses to load');
         return;
       }
+      
+      // Debug: Log verse range info
+      if (mode === 'juz' && verseRange.length > 0) {
+        const firstVerse = verseRange[0];
+        console.log('🎯 Juz Mode - Starting playback from:', {
+          surah: firstVerse.ayah.surah?.number,
+          ayah: firstVerse.ayah.numberInSurah,
+          totalVerses: verseRange.length,
+          audioUrl: firstVerse.ayah.audio
+        });
+      }
+      
       setCurrentVerseIndex(0);
       setCurrentRepeatCount(repeatCount);
       // Store repeat count for auto-progression
