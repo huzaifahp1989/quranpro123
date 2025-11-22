@@ -40,7 +40,7 @@ export function VerseDisplay({ verse, isHighlighted, onVerseClick, onPlayClick }
         </Badge>
         <div className="flex items-center gap-2">
           <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover-elevate"
+            className="p-2 rounded-full hover-elevate transition-all"
             onClick={handlePlayClick}
             data-testid={`button-play-verse-${ayah.numberInSurah}`}
             aria-label="Play verse"
@@ -48,7 +48,7 @@ export function VerseDisplay({ verse, isHighlighted, onVerseClick, onPlayClick }
             <Play className="w-4 h-4 text-primary fill-primary" />
           </button>
           <button
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full hover-elevate"
+            className="p-2 rounded-full hover-elevate transition-all opacity-0 group-hover:opacity-100"
             data-testid={`button-bookmark-${ayah.numberInSurah}`}
             aria-label="Bookmark verse"
           >
