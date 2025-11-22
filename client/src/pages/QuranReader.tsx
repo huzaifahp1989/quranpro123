@@ -379,36 +379,57 @@ export default function QuranReader() {
           )}
         </main>
 
-      {isAudioPlayerOpen && verses && verses.length > 0 && (
-        <AudioPlayer
-          audioUrl={audioUrl}
-          currentVerse={currentVerse}
-          totalVerses={verses.length}
-          onPrevious={handlePreviousVerse}
-          onNext={handleNextVerse}
-          onVerseChange={setCurrentVerse}
-          selectedReciter={selectedReciter}
-          onReciterChange={setSelectedReciter}
-          isLoading={isVersesLoading}
-          onPlayingChange={setIsAudioPlaying}
-          shouldAutoPlay={shouldAutoPlay}
-          isPlaying={isAudioPlaying}
-          onClose={() => setIsAudioPlayerOpen(false)}
-        />
-      )}
-      
-      {!isAudioPlayerOpen && verses && verses.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsAudioPlayerOpen(true)}
-            className="w-full rounded-none"
-            data-testid="button-open-player"
-          >
-            Show Player
-          </Button>
-        </div>
+      {verses && verses.length > 0 && (
+        <>
+          {isAudioPlayerOpen ? (
+            <AudioPlayer
+              audioUrl={audioUrl}
+              currentVerse={currentVerse}
+              totalVerses={verses.length}
+              onPrevious={handlePreviousVerse}
+              onNext={handleNextVerse}
+              onVerseChange={setCurrentVerse}
+              selectedReciter={selectedReciter}
+              onReciterChange={setSelectedReciter}
+              isLoading={isVersesLoading}
+              onPlayingChange={setIsAudioPlaying}
+              shouldAutoPlay={shouldAutoPlay}
+              isPlaying={isAudioPlaying}
+              onClose={() => setIsAudioPlayerOpen(false)}
+            />
+          ) : (
+            <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsAudioPlayerOpen(true)}
+                className="w-full rounded-none"
+                data-testid="button-open-player"
+              >
+                Show Player
+              </Button>
+            </div>
+          )}
+          {/* Hidden audio element for continuous playback when player is closed */}
+          {!isAudioPlayerOpen && (
+            <div className="hidden">
+              <AudioPlayer
+                audioUrl={audioUrl}
+                currentVerse={currentVerse}
+                totalVerses={verses.length}
+                onPrevious={handlePreviousVerse}
+                onNext={handleNextVerse}
+                onVerseChange={setCurrentVerse}
+                selectedReciter={selectedReciter}
+                onReciterChange={setSelectedReciter}
+                isLoading={isVersesLoading}
+                onPlayingChange={setIsAudioPlaying}
+                shouldAutoPlay={shouldAutoPlay}
+                isPlaying={isAudioPlaying}
+              />
+            </div>
+          )}
+        </>
       )}
 
       <TafseerPanel
