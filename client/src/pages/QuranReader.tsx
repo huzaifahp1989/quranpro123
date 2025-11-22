@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2, BookOpen, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SurahSelector } from "@/components/SurahSelector";
 import { VerseDisplay } from "@/components/VerseDisplay";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { TafseerPanel } from "@/components/TafseerPanel";
 import { VoiceRecognitionButton } from "@/components/VoiceRecognitionButton";
 import { TopNav } from "@/components/TopNav";
-import { Surah, VerseWithTranslations, Tafseer, availableReciters } from "@shared/schema";
+import { Surah, VerseWithTranslations, Tafseer, availableReciters, allJuz } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function QuranReader() {
+  const [mode, setMode] = useState<'surah' | 'juz'>('surah');
   const [selectedSurah, setSelectedSurah] = useState(1);
+  const [selectedJuz, setSelectedJuz] = useState(1);
   const [currentVerse, setCurrentVerse] = useState(1);
   const [selectedReciter, setSelectedReciter] = useState(availableReciters[0].identifier);
   const [isTafseerOpen, setIsTafseerOpen] = useState(false);
@@ -21,6 +24,7 @@ export default function QuranReader() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ surah: number; ayah: number } | null>(null);
+  const [bookmarkedVerses, setBookmarkedVerses] = useState<{ surah: number; ayah: number }[]>([]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -65,6 +69,35 @@ export default function QuranReader() {
     setIsAudioPlaying(false);
     setShouldAutoPlay(false);
   };
+
+  const handleJuzChange = (juzNumber: number) => {
+    const juz = allJuz.find(j => j.number === juzNumber);
+    if (juz) {
+      setSelectedJuz(juzNumber);
+      setSelectedSurah(juz.startSurah);
+      setCurrentVerse(juz.startAyah);
+      setSelectedVerseForTafseer(null);
+      setIsAudioPlaying(false);
+      setShouldAutoPlay(false);
+    }
+  };
+
+  const toggleBookmark = (surah: number, ayah: number) => {
+    const isBookmarked = bookmarkedVerses.some(v => v.surah === surah && v.ayah === ayah);
+    if (isBookmarked) {
+      setBookmarkedVerses(bookmarkedVerses.filter(v => !(v.surah === surah && v.ayah === ayah)));
+    } else {
+      setBookmarkedVerses([...bookmarkedVerses, { surah, ayah }]);
+    }
+    localStorage.setItem('bookmarkedVerses', JSON.stringify([...bookmarkedVerses, { surah, ayah }]));
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('bookmarkedVerses');
+    if (saved) {
+      setBookmarkedVerses(JSON.parse(saved));
+    }
+  }, []);
 
   const handlePreviousVerse = () => {
     if (currentVerse > 1) {
@@ -155,14 +188,47 @@ export default function QuranReader() {
       {surahs && (
         <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
           <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Button 
+                size="sm" 
+                variant={mode === 'surah' ? 'default' : 'outline'}
+                onClick={() => setMode('surah')}
+                data-testid="btn-mode-surah"
+              >
+                Surah
+              </Button>
+              <Button 
+                size="sm" 
+                variant={mode === 'juz' ? 'default' : 'outline'}
+                onClick={() => setMode('juz')}
+                data-testid="btn-mode-juz"
+              >
+                Juz
+              </Button>
+            </div>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <SurahSelector
-                  surahs={surahs}
-                  selectedSurah={selectedSurah}
-                  onSurahChange={handleSurahChange}
-                  isLoading={isVersesLoading}
-                />
+                {mode === 'surah' ? (
+                  <SurahSelector
+                    surahs={surahs}
+                    selectedSurah={selectedSurah}
+                    onSurahChange={handleSurahChange}
+                    isLoading={isVersesLoading}
+                  />
+                ) : (
+                  <Select value={selectedJuz.toString()} onValueChange={(val) => handleJuzChange(parseInt(val))}>
+                    <SelectTrigger className="border-primary/50" data-testid="select-juz">
+                      <SelectValue placeholder="Choose a Juz" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allJuz.map((juz) => (
+                        <SelectItem key={juz.number} value={juz.number.toString()}>
+                          <span className="font-semibold">Juz {juz.number}: {juz.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <VoiceRecognitionButton
                 verses={verses}
@@ -200,6 +266,11 @@ export default function QuranReader() {
       <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
         {currentSurah && (
           <div className="mb-6 sm:mb-8 text-center">
+            {mode === 'juz' && allJuz[selectedJuz - 1] && (
+              <p className="text-xs sm:text-sm text-primary font-semibold mb-2">
+                Juz {selectedJuz}: {allJuz[selectedJuz - 1].name}
+              </p>
+            )}
             <h2 className="font-arabic text-3xl sm:text-4xl mb-2" data-testid="text-surah-name-arabic">
               {currentSurah.name}
             </h2>
@@ -225,15 +296,28 @@ export default function QuranReader() {
           </div>
         ) : verses && verses.length > 0 ? (
           <div data-testid="container-verses">
-            {verses.map((verse) => (
-              <VerseDisplay
-                key={verse.ayah.number}
-                verse={verse}
-                isHighlighted={verse.ayah.numberInSurah === currentVerse}
-                onVerseClick={handleVerseClick}
-                onPlayClick={handlePlayVerseClick}
-              />
-            ))}
+            {verses.map((verse) => {
+              const isBookmarked = bookmarkedVerses.some(v => v.surah === selectedSurah && v.ayah === verse.ayah.numberInSurah);
+              return (
+                <div key={verse.ayah.number} className="relative group">
+                  <VerseDisplay
+                    verse={verse}
+                    isHighlighted={verse.ayah.numberInSurah === currentVerse}
+                    onVerseClick={handleVerseClick}
+                    onPlayClick={handlePlayVerseClick}
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => toggleBookmark(selectedSurah, verse.ayah.numberInSurah)}
+                    data-testid={`btn-bookmark-${selectedSurah}-${verse.ayah.numberInSurah}`}
+                  >
+                    <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">

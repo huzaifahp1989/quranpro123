@@ -100,8 +100,26 @@ export default function MemoQuran() {
   const getVerseRange = () => {
     if (!allVerses) return [];
     if (mode === 'juz' && juzData) {
-      // For Juz: include all verses from start to end
-      return allVerses;
+      // For Juz: filter verses to only include those within Juz boundaries
+      return allVerses.filter(verse => {
+        const surahNum = verse.ayah.surah?.number || 0;
+        const ayahNum = verse.ayah.numberInSurah;
+        
+        // Check if verse is within Juz boundaries
+        if (surahNum < juzData.startSurah || surahNum > juzData.endSurah) {
+          return false;
+        }
+        
+        // Check ayah boundaries
+        if (surahNum === juzData.startSurah && ayahNum < juzData.startAyah) {
+          return false;
+        }
+        if (surahNum === juzData.endSurah && ayahNum > juzData.endAyah) {
+          return false;
+        }
+        
+        return true;
+      });
     }
     // For Surah: use startVerse and endVerse
     const start = Math.max(0, startVerse - 1);
