@@ -30,7 +30,7 @@ export function VerseDisplay({ verse, isHighlighted, onVerseClick, onPlayClick }
       data-verse-number={ayah.numberInSurah}
       onClick={(e) => {
         e.stopPropagation();
-        onPlayClick?.(ayah.numberInSurah);
+        onVerseClick?.(ayah.numberInSurah);
       }}
     >
       <div className="flex items-start justify-between gap-4 mb-3">
