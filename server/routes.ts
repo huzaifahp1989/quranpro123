@@ -227,11 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get Tafseer for a specific verse (English - Multiple Editions)
+  // Get Tafseer for a specific verse (English - Multiple Editions with Fallback)
   app.get("/api/tafseer/:surahNumber/:ayahNumber", async (req, res) => {
     try {
       const { surahNumber, ayahNumber } = req.params;
-      const edition = (req.query.edition as string) || "en-tafisr-ibn-kathir";
+      const requestedEdition = (req.query.edition as string) || "en-tafisr-ibn-kathir";
       
       // Validate input
       const surahNum = parseInt(surahNumber);
@@ -239,12 +239,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (isNaN(surahNum) || isNaN(ayahNum) || surahNum < 1 || surahNum > 114 || ayahNum < 1) {
         return res.status(400).json({ error: "Invalid surah or ayah number" });
-      }
-
-      const cacheKey = `tafseer-${edition}-${surahNumber}-${ayahNumber}`;
-      const cached = getFromCache(cacheKey);
-      if (cached) {
-        return res.json(cached);
       }
 
       // Use spa5k/tafsir_api - free CDN-hosted English tafsirs
@@ -259,35 +253,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "en-al-qushairi-tafsir": "Al-Qushairi Tafsir",
       };
 
-      // Try the requested edition
-      try {
-        const response = await axios.get(
-          `${TAFSIR_CDN}/${edition}/${surahNum}.json`,
-          { timeout: 10000 }
-        );
+      // Define fallback order: try requested first, then fall back to most complete editions
+      const editionsToTry = [
+        requestedEdition,
+        "en-tafisr-ibn-kathir",
+        "en-tafsir-maarif-ul-quran",
+        "en-al-jalalayn",
+        "en-tafsir-ibn-abbas",
+        "en-al-qushairi-tafsir",
+      ];
 
-        if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
-          const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
-          
-          if (ayahTafsir && ayahTafsir.text) {
-            const tafseer = {
-              ayahNumber: ayahNum,
-              text: ayahTafsir.text,
-              tafseerName: TAFSIR_NAMES[edition] || edition,
-              language: "English",
-            };
-            
-            setCache(cacheKey, tafseer);
-            return res.json(tafseer);
-          }
+      // Remove duplicates while preserving order
+      const uniqueEditions = [...new Set(editionsToTry)];
+
+      // Try each edition in order
+      for (const edition of uniqueEditions) {
+        const cacheKey = `tafseer-${edition}-${surahNumber}-${ayahNumber}`;
+        
+        // Check cache first
+        const cached = getFromCache(cacheKey);
+        if (cached) {
+          return res.json(cached);
         }
-      } catch (err) {
-        console.log(`Tafsir ${edition} not available for surah ${surahNum}, ayah ${ayahNum}`);
+
+        try {
+          const response = await axios.get(
+            `${TAFSIR_CDN}/${edition}/${surahNum}.json`,
+            { timeout: 10000 }
+          );
+
+          if (response.data && response.data.ayahs && Array.isArray(response.data.ayahs)) {
+            const ayahTafsir = response.data.ayahs.find((t: any) => t.ayah === ayahNum);
+            
+            if (ayahTafsir && ayahTafsir.text) {
+              const tafseer = {
+                ayahNumber: ayahNum,
+                text: ayahTafsir.text,
+                tafseerName: TAFSIR_NAMES[edition] || edition,
+                language: "English",
+              };
+              
+              setCache(cacheKey, tafseer);
+              return res.json(tafseer);
+            }
+          }
+        } catch (err) {
+          // Continue to next edition
+          continue;
+        }
       }
 
-      // If requested edition not available, return error
+      // If no edition has tafseer available
       res.status(404).json({ 
-        error: `Tafseer not available for this verse in ${TAFSIR_NAMES[edition] || edition}` 
+        error: `Tafseer not available for this verse in any edition` 
       });
     } catch (error: any) {
       console.error("Error fetching tafseer:", error.message);
