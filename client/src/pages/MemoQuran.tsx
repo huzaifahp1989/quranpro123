@@ -111,6 +111,21 @@ export default function MemoQuran() {
     }
   }, [maxVerses, mode]);
 
+  // Reset playback state when switching modes or changing Juz/Surah
+  useEffect(() => {
+    setCurrentVerseIndex(0);
+    setIsPlaying(false);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    
+    // Reset verse range when switching to Surah mode
+    if (mode === 'surah') {
+      setStartVerse(1);
+      setEndVerse(7);
+    }
+  }, [mode, selectedJuz, selectedSurah]);
+
   const getVerseRange = () => {
     if (!allVerses) return [];
     if (mode === 'juz' && juzData) {
@@ -135,16 +150,6 @@ export default function MemoQuran() {
         return true;
       });
       
-      // Debug: Log filtering results
-      if (filtered.length > 0) {
-        console.log(`📖 Juz ${juzData.number} filtered verses:`, {
-          total: filtered.length,
-          firstVerse: `${filtered[0].ayah.surah?.number}:${filtered[0].ayah.numberInSurah}`,
-          lastVerse: `${filtered[filtered.length - 1].ayah.surah?.number}:${filtered[filtered.length - 1].ayah.numberInSurah}`,
-          expectedStart: `${juzData.startSurah}:${juzData.startAyah}`,
-          expectedEnd: `${juzData.endSurah}:${juzData.endAyah}`
-        });
-      }
       
       return filtered;
     }
@@ -231,15 +236,10 @@ export default function MemoQuran() {
         return;
       }
       
-      // Debug: Log verse range info
-      if (mode === 'juz' && verseRange.length > 0) {
-        const firstVerse = verseRange[0];
-        console.log('🎯 Juz Mode - Starting playback from:', {
-          surah: firstVerse.ayah.surah?.number,
-          ayah: firstVerse.ayah.numberInSurah,
-          totalVerses: verseRange.length,
-          audioUrl: firstVerse.ayah.audio
-        });
+      // Validate verse range before playing
+      if (verseRange.length === 0) {
+        console.warn('Verse range is empty, cannot play');
+        return;
       }
       
       setCurrentVerseIndex(0);
