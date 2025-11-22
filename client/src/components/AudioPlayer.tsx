@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Square, Zap } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Volume2, Repeat, Square, Zap, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -18,6 +18,7 @@ interface AudioPlayerProps {
   onPlayingChange?: (isPlaying: boolean) => void;
   shouldAutoPlay?: boolean;
   isPlaying?: boolean; // External playing state from parent
+  onClose?: () => void; // Close button callback
 }
 
 export function AudioPlayer({
@@ -32,7 +33,8 @@ export function AudioPlayer({
   isLoading,
   onPlayingChange,
   shouldAutoPlay,
-  isPlaying: externalIsPlaying
+  isPlaying: externalIsPlaying,
+  onClose
 }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -224,31 +226,44 @@ export function AudioPlayer({
               </div>
             </div>
 
-            <Select
-              value={selectedReciter}
-              onValueChange={onReciterChange}
-              disabled={isLoading}
-            >
-              <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-9" data-testid="select-reciter">
-                <SelectValue placeholder="Select Reciter" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableReciters.map((reciter) => (
-                  <SelectItem
-                    key={reciter.identifier}
-                    value={reciter.identifier}
-                    data-testid={`option-reciter-${reciter.identifier}`}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">{reciter.name}</span>
-                      {reciter.style && (
-                        <span className="text-xs text-muted-foreground">{reciter.style}</span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                value={selectedReciter}
+                onValueChange={onReciterChange}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="w-full sm:w-[180px] md:w-[200px] h-9" data-testid="select-reciter">
+                  <SelectValue placeholder="Select Reciter" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableReciters.map((reciter) => (
+                    <SelectItem
+                      key={reciter.identifier}
+                      value={reciter.identifier}
+                      data-testid={`option-reciter-${reciter.identifier}`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">{reciter.name}</span>
+                        {reciter.style && (
+                          <span className="text-xs text-muted-foreground">{reciter.style}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onClose}
+                data-testid="button-close-player"
+                aria-label="Close player"
+                className="h-9 w-9"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Progress slider */}

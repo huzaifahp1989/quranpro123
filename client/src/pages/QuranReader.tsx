@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, BookOpen, Bookmark, Eye, EyeOff } from "lucide-react";
+import { Loader2, BookOpen, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SurahSelector } from "@/components/SurahSelector";
@@ -28,7 +28,7 @@ export default function QuranReader() {
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<{ surah: number; ayah: number } | null>(null);
   const [bookmarkedVerses, setBookmarkedVerses] = useState<{ surah: number; ayah: number }[]>([]);
-  const [showVerses, setShowVerses] = useState(true);
+  const [isAudioPlayerOpen, setIsAudioPlayerOpen] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -249,15 +249,6 @@ export default function QuranReader() {
                   </Select>
                 )}
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setShowVerses(!showVerses)}
-                data-testid="button-toggle-verses"
-                aria-label={showVerses ? "Hide verses" : "Show verses"}
-              >
-                {showVerses ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-              </Button>
               <VoiceRecognitionButton
                 verses={verses}
                 surahs={surahs}
@@ -291,8 +282,7 @@ export default function QuranReader() {
         </div>
       )}
 
-      {showVerses && (
-        <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-12 py-4 sm:py-8 lg:py-12">
           {currentSurah && (
             <div className="mb-6 sm:mb-8 text-center">
               {mode === 'juz' && allJuz[selectedJuz - 1] && (
@@ -377,9 +367,8 @@ export default function QuranReader() {
             </div>
           )}
         </main>
-      )}
 
-      {showVerses && verses && verses.length > 0 && (
+      {isAudioPlayerOpen && verses && verses.length > 0 && (
         <AudioPlayer
           audioUrl={audioUrl}
           currentVerse={currentVerse}
@@ -393,7 +382,22 @@ export default function QuranReader() {
           onPlayingChange={setIsAudioPlaying}
           shouldAutoPlay={shouldAutoPlay}
           isPlaying={isAudioPlaying}
+          onClose={() => setIsAudioPlayerOpen(false)}
         />
+      )}
+      
+      {!isAudioPlayerOpen && verses && verses.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setIsAudioPlayerOpen(true)}
+            className="w-full rounded-none"
+            data-testid="button-open-player"
+          >
+            Show Player
+          </Button>
+        </div>
       )}
 
       <TafseerPanel
