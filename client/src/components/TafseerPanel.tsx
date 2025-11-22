@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, X, Loader2 } from "lucide-react";
+import { MessageSquare, X, Loader2, ChevronDown, ChevronUp, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -19,6 +19,12 @@ const TAFSIR_EDITIONS = [
   { value: "en-al-jalalayn", label: "Tafsir Al-Jalalayn" },
   { value: "en-tafsir-ibn-abbas", label: "Tafsir Ibn Abbas" },
 ] as const;
+
+const PANEL_HEIGHTS = {
+  small: "25vh",
+  normal: "35vh",
+  large: "70vh",
+} as const;
 
 interface TafseerPanelProps {
   tafseer: Tafseer | null;
@@ -43,6 +49,11 @@ export function TafseerPanel({
   onEditionChange,
   error 
 }: TafseerPanelProps) {
+  const [panelSize, setPanelSize] = useState<keyof typeof PANEL_HEIGHTS>("normal");
+
+  const handleSizeChange = (size: keyof typeof PANEL_HEIGHTS) => {
+    setPanelSize(size);
+  };
 
   return (
     <>
@@ -62,11 +73,11 @@ export function TafseerPanel({
 
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-in-out",
+          "fixed inset-x-0 bottom-0 z-50 transition-all duration-300 ease-in-out",
           isOpen ? "translate-y-0" : "translate-y-full"
         )}
       >
-        <Card className="rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 h-[35vh] flex flex-col">
+        <Card className={cn("rounded-t-2xl rounded-b-none border-t border-x-0 border-b-0 flex flex-col transition-all duration-300", `h-[${PANEL_HEIGHTS[panelSize]}]`)} style={{ height: PANEL_HEIGHTS[panelSize] }}>
           <div className="flex flex-col gap-3 p-4 border-b border-card-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -75,15 +86,47 @@ export function TafseerPanel({
                   Tafseer {verseNumber && `- Verse ${verseNumber}`}
                 </h3>
               </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={onToggle}
-                data-testid="button-close-tafseer"
-                aria-label="Close Tafseer"
-              >
-                <X className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleSizeChange("small")}
+                  data-testid="button-shrink-tafseer"
+                  aria-label="Make smaller"
+                  className={panelSize === "small" ? "bg-accent" : ""}
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleSizeChange("normal")}
+                  data-testid="button-normal-tafseer"
+                  aria-label="Normal size"
+                  className={panelSize === "normal" ? "bg-accent" : ""}
+                >
+                  <Minimize2 className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => handleSizeChange("large")}
+                  data-testid="button-expand-tafseer"
+                  aria-label="Make larger"
+                  className={panelSize === "large" ? "bg-accent" : ""}
+                >
+                  <ChevronUp className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onToggle}
+                  data-testid="button-close-tafseer"
+                  aria-label="Close Tafseer"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
             <Select value={selectedEdition} onValueChange={onEditionChange}>
               <SelectTrigger 
