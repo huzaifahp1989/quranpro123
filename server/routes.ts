@@ -262,7 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ];
 
       // Remove duplicates while preserving order
-      const uniqueEditions = [...new Set(editionsToTry)];
+      const uniqueEditions = editionsToTry.filter((v, i, a) => a.indexOf(v) === i);
 
       // Try each edition in order
       for (const edition of uniqueEditions) {

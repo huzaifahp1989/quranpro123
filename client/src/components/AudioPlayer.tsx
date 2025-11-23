@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { availableReciters, Reciter } from "@shared/schema";
+import { toast } from "@/hooks/use-toast";
 
 interface AudioPlayerProps {
   audioUrl: string | null;
@@ -40,27 +41,44 @@ export function AudioPlayer({
 
   // Sync internal playing state with external state from parent
   useEffect(() => {
-    if (externalIsPlaying !== undefined && externalIsPlaying !== isPlaying) {
-      setIsPlaying(externalIsPlaying);
-      if (audioRef.current) {
-        if (externalIsPlaying) {
-          audioRef.current.play().catch(() => {});
-        } else {
-          audioRef.current.pause();
-        }
+    if (externalIsPlaying === undefined) return;
+    if (externalIsPlaying === isPlaying) return;
+
+    setIsPlaying(externalIsPlaying);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (externalIsPlaying) {
+      // Only attempt to play if we have a source
+      if (!audio.src) {
+        setIsPlaying(false);
+        onPlayingChange?.(false);
+        return;
       }
+      audio.play().catch(() => {
+        setIsPlaying(false);
+        onPlayingChange?.(false);
+      });
+    } else {
+      audio.pause();
     }
-  }, [externalIsPlaying]);
+  }, [externalIsPlaying, isPlaying, onPlayingChange]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isRepeating, setIsRepeating] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const attemptedFallbackReciterRef = useRef<boolean>(false);
+  const fallbackCandidatesRef = useRef<string[]>([]);
+  const fallbackIndexRef = useRef<number>(0);
+  const silentUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (audioRef.current && audioUrl) {
-      audioRef.current.src = audioUrl;
+      fallbackCandidatesRef.current = buildFallbackCandidates(audioUrl);
+      fallbackIndexRef.current = 0;
+      audioRef.current.src = fallbackCandidatesRef.current[0] || audioUrl;
       audioRef.current.load();
       
       // Auto-play if we were playing before
@@ -76,6 +94,58 @@ export function AudioPlayer({
       }
     }
   }, [audioUrl]);
+
+  function buildFallbackCandidates(url: string | null): string[] {
+    if (!url) return [];
+    const candidates = [url];
+    // Try lower bitrates if the URL is from islamic.network
+    // Replace /128/ with /64/ and /32/ where applicable
+    if (url.includes('/128/')) {
+      candidates.push(url.replace('/128/', '/64/'));
+      candidates.push(url.replace('/128/', '/32/'));
+    }
+    return Array.from(new Set(candidates));
+  }
+
+  function createSilentWavUrl(durationMs: number): string {
+    const sampleRate = 44100;
+    const numChannels = 1;
+    const bytesPerSample = 2;
+    const numSamples = Math.floor((durationMs / 1000) * sampleRate);
+
+    const headerSize = 44;
+    const dataSize = numSamples * numChannels * bytesPerSample;
+    const buffer = new ArrayBuffer(headerSize + dataSize);
+    const view = new DataView(buffer);
+
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+    view.setUint16(32, numChannels * bytesPerSample, true);
+    view.setUint16(34, bytesPerSample * 8, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    for (let i = 0; i < numSamples; i++) {
+      const offset = headerSize + i * bytesPerSample;
+      view.setInt16(offset, 0, true);
+    }
+
+    const blob = new Blob([view], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+  }
+
+  function writeString(view: DataView, offset: number, str: string) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -97,14 +167,50 @@ export function AudioPlayer({
       }
     };
 
+    const handleError = () => {
+      setIsPlaying(false);
+      onPlayingChange?.(false);
+      // Try next fallback candidate (lower bitrate variants) first
+      const nextIdx = fallbackIndexRef.current + 1;
+      const nextUrl = fallbackCandidatesRef.current[nextIdx];
+      if (nextUrl && audioRef.current) {
+        fallbackIndexRef.current = nextIdx;
+        audioRef.current.src = nextUrl;
+        audioRef.current.load();
+        audioRef.current.play().catch(() => {
+          // If play fails, let the error event fire again and proceed
+        });
+        return;
+      }
+      const localPlaceholder = "/audio/letters/alif.mp3";
+      if (audioRef.current) {
+        audioRef.current.src = localPlaceholder;
+        audioRef.current.load();
+      }
+
+      toast({
+        title: "Audio unavailable",
+        description: "The recitation stream could not be loaded. Try another reciter or retry later.",
+      });
+    };
+
+    const handleAbort = () => {
+      setIsPlaying(false);
+      onPlayingChange?.(false);
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('abort', handleAbort);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('durationchange', handleDurationChange);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleError);
+      audio.removeEventListener('abort', handleAbort);
     };
   }, [currentVerse, totalVerses, onNext, isRepeating]);
 
@@ -207,7 +313,7 @@ export function AudioPlayer({
 
   return (
     <div className="sticky bottom-0 left-0 right-0 bg-card border-t border-card-border z-40">
-      <audio ref={audioRef} />
+      <audio ref={audioRef} crossOrigin="anonymous" />
       
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
         <div className="flex flex-col gap-2 sm:gap-3">

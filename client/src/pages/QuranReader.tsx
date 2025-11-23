@@ -48,26 +48,136 @@ export default function QuranReader() {
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
+  const ALQURAN_CLOUD_API = 'https://api.alquran.cloud/v1';
+
   const { data: surahs, isLoading: isSurahsLoading } = useQuery<Surah[]>({
-    queryKey: ['/api/surahs'],
+    queryKey: ['surahs'],
+    queryFn: async () => {
+      const res = await fetch(`${ALQURAN_CLOUD_API}/surah`);
+      const json = await res.json();
+      if (json.code !== 200 || !json.data) {
+        throw new Error('Failed to fetch surahs');
+      }
+      const surahs: Surah[] = json.data.map((surah: any) => ({
+        number: surah.number,
+        name: surah.name,
+        englishName: surah.englishName,
+        englishNameTranslation: surah.englishNameTranslation,
+        numberOfAyahs: surah.numberOfAyahs,
+        revelationType: surah.revelationType,
+      }));
+      return surahs;
+    },
   });
 
   const { data: verses, isLoading: isVersesLoading, error: versesError } = useQuery<VerseWithTranslations[]>({
-    queryKey: ['/api/surah', selectedSurah, selectedReciter],
-    enabled: selectedSurah > 0,
+    queryKey: ['content', mode, selectedSurah, selectedJuz, selectedReciter],
+    queryFn: async () => {
+      const editions = `quran-uthmani,${selectedReciter},ur.jalandhry,en.sahih`;
+      const fetchSurah = async (surahNum: number): Promise<VerseWithTranslations[]> => {
+        const res = await fetch(`${ALQURAN_CLOUD_API}/surah/${surahNum}/editions/${editions}`);
+        const json = await res.json();
+        if (json.code !== 200 || !json.data) {
+          throw new Error('Failed to fetch surah data');
+        }
+        const [arabicData, audioData, urduData, englishData] = json.data;
+        return arabicData.ayahs.map((ayah: any, index: number) => ({
+          ayah: {
+            number: ayah.number,
+            numberInSurah: ayah.numberInSurah,
+            text: ayah.text,
+            audio: (() => {
+              const raw = audioData.ayahs[index]?.audio || undefined;
+              if (!raw) return undefined;
+              return import.meta.env.DEV
+                ? raw.replace(
+                    "https://cdn.islamic.network/quran/audio",
+                    "/quran-audio"
+                  )
+                : raw;
+            })(),
+            surah: {
+              number: arabicData.number,
+              name: arabicData.name,
+              englishName: arabicData.englishName,
+            },
+          },
+          urduTranslation: urduData?.ayahs?.[index]
+            ? {
+                text: urduData.ayahs[index].text || '',
+                language: 'Urdu',
+                translator: 'Fateh Muhammad Jalandhry',
+              }
+            : undefined,
+          englishTranslation: englishData?.ayahs?.[index]
+            ? {
+                text: englishData.ayahs[index].text || '',
+                language: 'English',
+                translator: 'Sahih International',
+              }
+            : undefined,
+        }));
+      };
+
+      if (mode === 'surah') {
+        return await fetchSurah(selectedSurah);
+      } else {
+        const juz = allJuz[selectedJuz - 1];
+        const surahRange = Array.from({ length: juz.endSurah - juz.startSurah + 1 }, (_, i) => juz.startSurah + i);
+        const all = await Promise.all(surahRange.map((s) => fetchSurah(s)));
+        const combined = all.flat();
+        const filtered = combined.filter((v) => {
+          const sNum = v.ayah.surah?.number || 0;
+          const aNum = v.ayah.numberInSurah;
+          if (sNum === juz.startSurah && aNum < juz.startAyah) return false;
+          if (sNum === juz.endSurah && aNum > juz.endAyah) return false;
+          return true;
+        });
+        return filtered;
+      }
+    },
+    enabled: mode === 'surah' ? selectedSurah > 0 : selectedJuz > 0,
   });
 
   const { data: tafseer, isLoading: isTafseerLoading, error: tafseerError } = useQuery<Tafseer>({
-    queryKey: ['/api/tafseer', selectedSurah, selectedVerseForTafseer, tafsirEdition],
+    queryKey: ['tafseer', selectedSurah, selectedVerseForTafseer, tafsirEdition],
     queryFn: async () => {
-      const response = await fetch(
-        `/api/tafseer/${selectedSurah}/${selectedVerseForTafseer}?edition=${tafsirEdition}`
-      );
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to fetch tafseer' }));
-        throw new Error(errorData.error || 'Failed to fetch tafseer');
+      const surahNum = selectedSurah;
+      const ayahNum = selectedVerseForTafseer as number;
+      const TAFSIR_CDN = 'https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir';
+      const TAFSIR_NAMES: Record<string, string> = {
+        'en-tafisr-ibn-kathir': 'Tafsir Ibn Kathir',
+        'en-tafsir-maarif-ul-quran': 'Maariful Quran',
+        'en-al-jalalayn': 'Tafsir Al-Jalalayn',
+        'en-tafsir-ibn-abbas': 'Tafsir Ibn Abbas',
+      };
+      const editionsToTry = [
+        tafsirEdition,
+        'en-tafisr-ibn-kathir',
+        'en-tafsir-maarif-ul-quran',
+        'en-al-jalalayn',
+        'en-tafsir-ibn-abbas',
+      ];
+      for (const edition of editionsToTry.filter((v, i, a) => a.indexOf(v) === i)) {
+        try {
+          const res = await fetch(`${TAFSIR_CDN}/${edition}/${surahNum}.json`);
+          const data = await res.json();
+          if (data?.ayahs && Array.isArray(data.ayahs)) {
+            const ayahTafsir = data.ayahs.find((t: any) => t.ayah === ayahNum);
+            if (ayahTafsir?.text) {
+              return {
+                ayahNumber: ayahNum,
+                text: ayahTafsir.text,
+                tafseerName: TAFSIR_NAMES[edition] || edition,
+                language: 'English',
+              } as Tafseer;
+            }
+          }
+        } catch (_err) {
+          continue;
+        }
       }
-      return response.json();
+      throw new Error('Tafseer not available for this verse');
     },
     enabled: selectedVerseForTafseer !== null && isTafseerOpen,
   });
@@ -94,7 +204,7 @@ export default function QuranReader() {
     if (juz) {
       setSelectedJuz(juzNumber);
       setSelectedSurah(juz.startSurah);
-      setCurrentVerse(juz.startAyah);
+      setCurrentVerse(1);
       setSelectedVerseForTafseer(null);
       setIsAudioPlaying(false);
       setShouldAutoPlay(false);
@@ -119,6 +229,15 @@ export default function QuranReader() {
   }, []);
 
   const handlePreviousVerse = () => {
+    if (mode === 'juz') {
+      if (currentVerse > 1) {
+        setCurrentVerse(currentVerse - 1);
+      } else {
+        setIsAudioPlaying(false);
+      }
+      return;
+    }
+
     if (currentVerse > 1) {
       setCurrentVerse(currentVerse - 1);
     } else if (selectedSurah > 1) {
@@ -131,19 +250,26 @@ export default function QuranReader() {
   };
 
   const handleNextVerse = () => {
+    if (mode === 'juz') {
+      if (verses && currentVerse < verses.length) {
+        const nextVerse = currentVerse + 1;
+        setCurrentVerse(nextVerse);
+        setShouldAutoPlay(true);
+      } else {
+        setIsAudioPlaying(false);
+      }
+      return;
+    }
+
     if (verses && currentVerse < verses.length) {
       const nextVerse = currentVerse + 1;
       setCurrentVerse(nextVerse);
-      // Continue playing with auto-play enabled
       setShouldAutoPlay(true);
     } else if (selectedSurah < 114) {
-      // Move to next surah and start at verse 1
       setSelectedSurah(selectedSurah + 1);
       setCurrentVerse(1);
-      // Enable auto-play for the next surah's first verse
       setShouldAutoPlay(true);
     } else {
-      // Reached end of Quran
       setIsAudioPlaying(false);
     }
   };
@@ -272,12 +398,23 @@ export default function QuranReader() {
                   setIsAudioPlaying(false);
                   setShouldAutoPlay(false);
                   
+                  if (mode === 'juz' && verses && verses.length > 0) {
+                    const idx = verses.findIndex(v => v.ayah.surah?.number === surah && v.ayah.numberInSurah === ayah);
+                    if (idx >= 0) {
+                      setCurrentVerse(idx + 1);
+                      setTimeout(() => {
+                        const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
+                        if (verseElement) {
+                          verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }, 100);
+                      return;
+                    }
+                  }
                   if (surah !== selectedSurah) {
-                    // Changing Surah - set pending navigation to apply after verses load
                     setSelectedSurah(surah);
                     setPendingNavigation({ surah, ayah });
                   } else {
-                    // Same Surah - just set verse and scroll
                     setCurrentVerse(ayah);
                     setTimeout(() => {
                       const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
@@ -326,15 +463,21 @@ export default function QuranReader() {
             </div>
           ) : verses && verses.length > 0 ? (
             <div data-testid="container-verses">
-              {verses.map((verse) => {
+              {verses.map((verse, i) => {
                 const isBookmarked = bookmarkedVerses.some(v => v.surah === selectedSurah && v.ayah === verse.ayah.numberInSurah);
                 return (
                   <div key={verse.ayah.number} className="relative group">
                     <VerseDisplay
                       verse={verse}
-                      isHighlighted={verse.ayah.numberInSurah === currentVerse}
-                      onVerseClick={handleVerseClick}
-                      onPlayClick={handlePlayVerseClick}
+                      isHighlighted={mode === 'juz' ? (i + 1) === currentVerse : verse.ayah.numberInSurah === currentVerse}
+                      onVerseClick={(num) => {
+                        const target = mode === 'juz' ? (i + 1) : num;
+                        handleVerseClick(target);
+                      }}
+                      onPlayClick={(num) => {
+                        const target = mode === 'juz' ? (i + 1) : num;
+                        handlePlayVerseClick(target);
+                      }}
                     />
                     <Button
                       size="icon"

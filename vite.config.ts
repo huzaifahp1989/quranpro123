@@ -32,6 +32,13 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    proxy: {
+      "/quran-audio": {
+        target: "https://cdn.islamic.network/quran/audio",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/quran-audio\//, "/"),
+      },
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],

@@ -36,12 +36,74 @@ export default function QuranDictionary() {
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
+  const ALQURAN_CLOUD_API = 'https://api.alquran.cloud/v1';
+
   const { data: surahs, isLoading: isSurahsLoading } = useQuery<Surah[]>({
-    queryKey: ['/api/surahs'],
+    queryKey: ['dict-surahs'],
+    queryFn: async () => {
+      const res = await fetch(`${ALQURAN_CLOUD_API}/surah`);
+      const json = await res.json();
+      if (json.code !== 200 || !json.data) {
+        throw new Error('Failed to fetch surahs');
+      }
+      return json.data.map((surah: any) => ({
+        number: surah.number,
+        name: surah.name,
+        englishName: surah.englishName,
+        englishNameTranslation: surah.englishNameTranslation,
+        numberOfAyahs: surah.numberOfAyahs,
+        revelationType: surah.revelationType,
+      }));
+    },
   });
 
   const { data: verses, isLoading: isVersesLoading } = useQuery<VerseWithTranslations[]>({
-    queryKey: ['/api/surah', selectedSurah, selectedReciter],
+    queryKey: ['dict-surah', selectedSurah, selectedReciter],
+    queryFn: async () => {
+      const editions = `quran-uthmani,${selectedReciter},ur.jalandhry,en.sahih`;
+      const res = await fetch(`${ALQURAN_CLOUD_API}/surah/${selectedSurah}/editions/${editions}`);
+      const json = await res.json();
+      if (json.code !== 200 || !json.data) {
+        throw new Error('Failed to fetch surah data');
+      }
+      const [arabicData, audioData, urduData, englishData] = json.data;
+      return arabicData.ayahs.map((ayah: any, index: number) => ({
+        ayah: {
+          number: ayah.number,
+          numberInSurah: ayah.numberInSurah,
+          text: ayah.text,
+          audio: (() => {
+            const raw = audioData.ayahs[index]?.audio || undefined;
+            if (!raw) return undefined;
+            return import.meta.env.DEV
+              ? raw.replace(
+                  "https://cdn.islamic.network/quran/audio",
+                  "/quran-audio"
+                )
+              : raw;
+          })(),
+          surah: {
+            number: arabicData.number,
+            name: arabicData.name,
+            englishName: arabicData.englishName,
+          },
+        },
+        urduTranslation: urduData?.ayahs?.[index]
+          ? {
+              text: urduData.ayahs[index].text || '',
+              language: 'Urdu',
+              translator: 'Fateh Muhammad Jalandhry',
+            }
+          : undefined,
+        englishTranslation: englishData?.ayahs?.[index]
+          ? {
+              text: englishData.ayahs[index].text || '',
+              language: 'English',
+              translator: 'Sahih International',
+            }
+          : undefined,
+      }));
+    },
     enabled: selectedSurah > 0,
   });
 
@@ -133,6 +195,7 @@ export default function QuranDictionary() {
               {verses && (
                 <VoiceRecognitionButton
                   verses={verses}
+                  surahs={surahs}
                   currentSurah={selectedSurah}
                   onNavigate={(surah, ayah) => {
                     setSelectedSurah(surah);
