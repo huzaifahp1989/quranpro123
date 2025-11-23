@@ -612,6 +612,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Stream remote PDFs via proxy to enable inline viewing
+  app.get("/api/pdf-view", async (req, res) => {
+    try {
+      const u = (req.query.u as string) || "";
+      if (!u || typeof u !== "string") {
+        return res.status(400).json({ error: "Missing PDF url" });
+      }
+      const url = decodeURIComponent(u);
+      if (!/^https?:\/\//i.test(url)) {
+        return res.status(400).json({ error: "Invalid PDF url" });
+      }
+
+      const response = await axios.get(url, {
+        responseType: "arraybuffer",
+        timeout: 15000,
+        // Some servers require headers; keep minimal
+        headers: {
+          Accept: "application/pdf,application/octet-stream;q=0.9,*/*;q=0.8",
+          "User-Agent": "QuranReaderPro/1.0",
+        },
+      });
+
+      const contentType = response.headers["content-type"] || "application/pdf";
+      const filename = (url.split("/").pop() || "document.pdf").split("?")[0];
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.send(Buffer.from(response.data));
+    } catch (error: any) {
+      console.error("Error proxying PDF:", error.message);
+      if (error.code === "ECONNABORTED") {
+        return res.status(504).json({ error: "PDF fetch timeout" });
+      }
+      const status = error.response?.status || 500;
+      return res.status(status).json({ error: "Failed to load PDF" });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Pre-load Quran data in background for instant voice search

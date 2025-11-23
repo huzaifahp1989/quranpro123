@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Loader2, Book } from "lucide-react";
+import { Search, Loader2, Book, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HadithCard } from "@/components/HadithCard";
@@ -45,11 +45,88 @@ export default function HadithBrowser() {
     queryParams.set('search', searchQuery);
   }
   
-  const apiUrl = `/api/hadiths/${selectedCollection}?${queryParams.toString()}`;
-  
   const { data, isLoading, isFetching } = useQuery<HadithApiResponse>({
-    queryKey: [apiUrl],
+    queryKey: ["hadiths", selectedCollection, page, searchQuery],
     enabled: selectedCollection !== "",
+    queryFn: async () => {
+      const HADITH_CDN = "https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1";
+      const isArabic = /[\u0600-\u06FF]/.test(searchQuery);
+      const tryEdition = async (lang: string) => {
+        const editionName = `${lang}-${selectedCollection}`;
+        const r = await fetch(`${HADITH_CDN}/editions/${editionName}.json`);
+        if (!r.ok) return null;
+        const j = await r.json();
+        return j?.hadiths || null;
+      };
+
+      let allHadiths = await tryEdition(isArabic ? "ara" : "eng");
+      if (!allHadiths) {
+        allHadiths = await tryEdition("eng");
+      }
+      allHadiths = allHadiths || [];
+
+      if (searchQuery) {
+        const sAr = searchQuery
+          .replace(/[\u064B-\u0652]/g, '')
+          .replace(/[\u0640\u061C\u200E\u200F]/g, '')
+          .replace(/[ًٌٍَُِّْ]/g, '')
+          .replace(/أ/g, 'ا')
+          .replace(/إ/g, 'ا')
+          .replace(/آ/g, 'ا')
+          .replace(/ٱ/g, 'ا')
+          .replace(/ة/g, 'ه')
+          .replace(/ى/g, 'ي')
+          .replace(/ئ/g, 'ي')
+          .replace(/ؤ/g, 'و')
+          .replace(/ء/g, '')
+          .trim();
+        const sEn = searchQuery.toLowerCase();
+        allHadiths = allHadiths.filter((h: any) => {
+          const t = (h.text || "");
+          const tAr = t
+            .replace(/[\u064B-\u0652]/g, '')
+            .replace(/[\u0640\u061C\u200E\u200F]/g, '')
+            .replace(/[ًٌٍَُِّْ]/g, '')
+            .replace(/أ/g, 'ا')
+            .replace(/إ/g, 'ا')
+            .replace(/آ/g, 'ا')
+            .replace(/ٱ/g, 'ا')
+            .replace(/ة/g, 'ه')
+            .replace(/ى/g, 'ي')
+            .replace(/ئ/g, 'ي')
+            .replace(/ؤ/g, 'و')
+            .replace(/ء/g, '')
+            .trim();
+          return t.toLowerCase().includes(sEn) || tAr.includes(sAr) ||
+            String(h.arabicnumber || "").includes(searchQuery) ||
+            String(h.hadithnumber || "").includes(searchQuery);
+        });
+      }
+      const pageSize = 20;
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+      const paginated = allHadiths.slice(start, end);
+      return {
+        collection: selectedCollection,
+        hadiths: paginated.map((h: any) => ({
+          number: h.hadithnumber || h.arabicnumber,
+          arabicText: /[\u0600-\u06FF]/.test(h.text || '') ? (h.text || '') : "",
+          englishText: /[\u0600-\u06FF]/.test(h.text || '') ? "" : (h.text || ''),
+          hadithNumber: String(h.hadithnumber || h.arabicnumber || ""),
+          narrator: "",
+          book: selectedCollection,
+          collection: selectedCollection,
+          urduText: "",
+          reference: `${selectedCollection.charAt(0).toUpperCase() + selectedCollection.slice(1)} ${h.hadithnumber || h.arabicnumber || ""}`,
+          grade: h.grades && h.grades.length > 0
+            ? h.grades.map((g: any) => typeof g === 'object' ? `${g.name || ''}: ${g.grade || ''}`.trim() : String(g)).join(', ')
+            : undefined
+        })),
+        page,
+        pageSize,
+        hasMore: end < allHadiths.length,
+      } as HadithApiResponse;
+    }
   });
 
   // Accumulate hadiths when new data arrives
@@ -99,20 +176,31 @@ export default function HadithBrowser() {
       
       <div className="sticky top-16 z-30 bg-background/95 backdrop-blur border-b border-border">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search hadiths..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 sm:pl-10 h-10 sm:h-12 text-sm sm:text-base"
-              data-testid="input-search-hadith"
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+              <Input
+                placeholder="Search hadiths..."
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-9 sm:pl-10 h-10 sm:h-12 text-sm sm:text-base"
+                data-testid="input-search-hadith"
+              />
+            </div>
+            <VoiceRecognitionButton
+              verses={undefined}
+              surahs={undefined}
+              currentSurah={0}
+              onNavigate={() => {}}
+              mode="hadith"
+              onHadithSearch={(q) => handleSearchChange(q)}
             />
           </div>
         </div>
       </div>
 
       <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        
         <Tabs value={selectedCollection} onValueChange={handleCollectionChange}>
           <TabsList className="mb-6 flex-wrap h-auto gap-2">
             {collections.map((collection) => (
@@ -201,3 +289,4 @@ export default function HadithBrowser() {
     </div>
   );
 }
+import { VoiceRecognitionButton } from "@/components/VoiceRecognitionButton";

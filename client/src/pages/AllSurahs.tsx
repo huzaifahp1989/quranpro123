@@ -136,6 +136,7 @@ const surahs: Surah[] = [
 export default function AllSurahs() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedSurah, setExpandedSurah] = useState<number | null>(null);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
@@ -194,7 +195,12 @@ export default function AllSurahs() {
               <div className="mb-2">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
-                    <h3 className="text-sm sm:text-base font-semibold">{surah.number}. {surah.name}</h3>
+                    <h3
+                      className="text-sm sm:text-base font-semibold cursor-pointer"
+                      onClick={() => setExpandedSurah(expandedSurah === surah.number ? null : surah.number)}
+                    >
+                      {surah.number}. {surah.name}
+                    </h3>
                     <p className="text-xs sm:text-sm text-muted-foreground">{surah.theme}</p>
                   </div>
                   <span className="font-arabic text-lg sm:text-xl shrink-0">{surah.arabicName}</span>
@@ -208,8 +214,7 @@ export default function AllSurahs() {
                   </span>
                 </div>
               </div>
-
-              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-3">
+              <p className={`text-xs sm:text-sm text-muted-foreground leading-relaxed ${expandedSurah === surah.number ? '' : 'line-clamp-3'}`}>
                 {surah.summary}
               </p>
             </Card>

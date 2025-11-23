@@ -78,22 +78,21 @@ export function AudioPlayer({
     if (audioRef.current && audioUrl) {
       fallbackCandidatesRef.current = buildFallbackCandidates(audioUrl);
       fallbackIndexRef.current = 0;
+      audioRef.current.preload = 'auto';
       audioRef.current.src = fallbackCandidatesRef.current[0] || audioUrl;
       audioRef.current.load();
-      
-      // Auto-play if we were playing before
-      if (isPlaying) {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.log("Auto-play prevented:", error);
+      const audio = audioRef.current;
+      const handleReady = () => {
+        if (isPlaying || shouldAutoPlay) {
+          audio.play().catch(() => {
             setIsPlaying(false);
             onPlayingChange?.(false);
           });
         }
-      }
+      };
+      audio.addEventListener('canplaythrough', handleReady, { once: true });
     }
-  }, [audioUrl]);
+  }, [audioUrl, isPlaying, shouldAutoPlay, onPlayingChange]);
 
   function buildFallbackCandidates(url: string | null): string[] {
     if (!url) return [];
@@ -170,24 +169,15 @@ export function AudioPlayer({
     const handleError = () => {
       setIsPlaying(false);
       onPlayingChange?.(false);
-      // Try next fallback candidate (lower bitrate variants) first
       const nextIdx = fallbackIndexRef.current + 1;
       const nextUrl = fallbackCandidatesRef.current[nextIdx];
       if (nextUrl && audioRef.current) {
         fallbackIndexRef.current = nextIdx;
         audioRef.current.src = nextUrl;
         audioRef.current.load();
-        audioRef.current.play().catch(() => {
-          // If play fails, let the error event fire again and proceed
-        });
+        audioRef.current.play().catch(() => {});
         return;
       }
-      const localPlaceholder = "/audio/letters/alif.mp3";
-      if (audioRef.current) {
-        audioRef.current.src = localPlaceholder;
-        audioRef.current.load();
-      }
-
       toast({
         title: "Audio unavailable",
         description: "The recitation stream could not be loaded. Try another reciter or retry later.",
@@ -199,11 +189,36 @@ export function AudioPlayer({
       onPlayingChange?.(false);
     };
 
+    const handleWaiting = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      if (isPlaying) {
+        setTimeout(() => { try { a.play(); } catch {} }, 200);
+      }
+    };
+
+    const handleStalled = () => {
+      const a = audioRef.current;
+      if (!a) return;
+      const nextIdx = fallbackIndexRef.current + 1;
+      const nextUrl = fallbackCandidatesRef.current[nextIdx];
+      if (nextUrl) {
+        fallbackIndexRef.current = nextIdx;
+        a.src = nextUrl;
+        a.load();
+        a.play().catch(() => {});
+      } else {
+        setTimeout(() => { try { a.play(); } catch {} }, 200);
+      }
+    };
+
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('durationchange', handleDurationChange);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
     audio.addEventListener('abort', handleAbort);
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('stalled', handleStalled);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
@@ -211,6 +226,8 @@ export function AudioPlayer({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
       audio.removeEventListener('abort', handleAbort);
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('stalled', handleStalled);
     };
   }, [currentVerse, totalVerses, onNext, isRepeating]);
 
@@ -313,7 +330,7 @@ export function AudioPlayer({
 
   return (
     <div className="sticky bottom-0 left-0 right-0 bg-card border-t border-card-border z-40">
-      <audio ref={audioRef} crossOrigin="anonymous" />
+      <audio ref={audioRef} preload="auto" />
       
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
         <div className="flex flex-col gap-2 sm:gap-3">

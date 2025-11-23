@@ -11,6 +11,7 @@ import { VoiceRecognitionButton } from "@/components/VoiceRecognitionButton";
 import { TopNav } from "@/components/TopNav";
 import { Surah, VerseWithTranslations, Tafseer, availableReciters, allJuz } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+ 
 
 export default function QuranReader() {
   const [mode, setMode] = useState<'surah' | 'juz'>('surah');
@@ -89,12 +90,14 @@ export default function QuranReader() {
             audio: (() => {
               const raw = audioData.ayahs[index]?.audio || undefined;
               if (!raw) return undefined;
-              return import.meta.env.DEV
-                ? raw.replace(
-                    "https://cdn.islamic.network/quran/audio",
-                    "/quran-audio"
-                  )
-                : raw;
+              const normalized = raw.replace(/^http:\/\//, "https://");
+              if (import.meta.env.DEV) {
+                return normalized.replace(
+                  "https://cdn.islamic.network/quran/audio",
+                  "/quran-audio"
+                );
+              }
+              return normalized;
             })(),
             surah: {
               number: arabicData.number,
@@ -138,6 +141,8 @@ export default function QuranReader() {
     },
     enabled: mode === 'surah' ? selectedSurah > 0 : selectedJuz > 0,
   });
+
+  
 
   const { data: tafseer, isLoading: isTafseerLoading, error: tafseerError } = useQuery<Tafseer>({
     queryKey: ['tafseer', selectedSurah, selectedVerseForTafseer, tafsirEdition],
@@ -311,6 +316,8 @@ export default function QuranReader() {
       if (selectedSurah === surah) {
         // Set the verse
         setCurrentVerse(Math.min(ayah, verses.length));
+        setIsAudioPlaying(true);
+        setShouldAutoPlay(true);
         
         // Scroll to the verse
         setTimeout(() => {
@@ -386,6 +393,7 @@ export default function QuranReader() {
                   </Select>
                 )}
               </div>
+              
               <VoiceRecognitionButton
                 verses={verses}
                 surahs={surahs}
@@ -393,15 +401,17 @@ export default function QuranReader() {
                 onNavigate={(surah: number, ayah: number) => {
                   console.log(`🎯 Voice Navigation: Surah ${surah}, Verse ${ayah}`);
                   
-                  // Reset state like handleSurahChange
                   setSelectedVerseForTafseer(null);
-                  setIsAudioPlaying(false);
-                  setShouldAutoPlay(false);
+                  setIsAudioPlaying(true);
+                  setShouldAutoPlay(true);
+                  setIsAudioPlayerOpen(true);
                   
                   if (mode === 'juz' && verses && verses.length > 0) {
                     const idx = verses.findIndex(v => v.ayah.surah?.number === surah && v.ayah.numberInSurah === ayah);
                     if (idx >= 0) {
                       setCurrentVerse(idx + 1);
+                      setIsAudioPlaying(true);
+                      setShouldAutoPlay(true);
                       setTimeout(() => {
                         const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
                         if (verseElement) {
@@ -411,11 +421,14 @@ export default function QuranReader() {
                       return;
                     }
                   }
+                  setMode('surah');
                   if (surah !== selectedSurah) {
                     setSelectedSurah(surah);
                     setPendingNavigation({ surah, ayah });
                   } else {
                     setCurrentVerse(ayah);
+                    setIsAudioPlaying(true);
+                    setShouldAutoPlay(true);
                     setTimeout(() => {
                       const verseElement = document.querySelector(`[data-verse-number="${ayah}"]`);
                       if (verseElement) {
@@ -521,6 +534,37 @@ export default function QuranReader() {
             </div>
           )}
         </main>
+
+      
+
+      {verses && (
+        <div className="md:hidden fixed bottom-20 right-4 z-50">
+          <VoiceRecognitionButton
+            verses={verses}
+            surahs={surahs}
+            currentSurah={selectedSurah}
+            onNavigate={(surah: number, ayah: number) => {
+              setSelectedVerseForTafseer(null);
+              setIsAudioPlaying(false);
+              setShouldAutoPlay(false);
+              if (mode === 'juz' && verses && verses.length > 0) {
+                const idx = verses.findIndex(v => v.ayah.surah?.number === surah && v.ayah.numberInSurah === ayah);
+                if (idx >= 0) {
+                  setCurrentVerse(idx + 1);
+                  return;
+                }
+              }
+              setMode('surah');
+              if (surah !== selectedSurah) {
+                setSelectedSurah(surah);
+                setPendingNavigation({ surah, ayah });
+              } else {
+                setCurrentVerse(ayah);
+              }
+            }}
+          />
+        </div>
+      )}
 
       {verses && verses.length > 0 && (
         <>

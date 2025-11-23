@@ -79,7 +79,7 @@
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Source Serif Pro', serif;
   --font-mono: 'IBM Plex Mono', monospace;
-  --font-arabic: 'Amiri Quran', 'Scheherazade New', serif;
+  --font-arabic: 'Noto Naskh Arabic', 'Amiri Quran', 'Scheherazade New', serif;
   --radius: 0.875rem; /* 8px */
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
@@ -333,3 +333,6 @@
     inset: -1px;
   }
 }
+  .arabic-verse {
+    word-spacing: 0.15em;
+  }
